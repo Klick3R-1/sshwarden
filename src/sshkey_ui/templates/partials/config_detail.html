@@ -1,0 +1,29 @@
+{% if not host %}
+<p style="color:#555; font-family:monospace">Select a host from the list.</p>
+{% else %}
+<p style="margin:0 0 1.2rem; font-size:1rem">
+  <span style="color:#e8a23a; font-weight:700">Host</span>
+  <span style="color:#fff; margin-left:.75rem">{{ host }}</span>
+</p>
+
+<table style="border:none; font-family:monospace; font-size:.83rem; width:100%; border-collapse:collapse">
+  {% for row in detail %}
+  <tr>
+    <td style="color:#888; padding:.18rem 0; width:160px; vertical-align:top">{{ row.key }}</td>
+    <td style="padding:.18rem 0 .18rem 1rem;
+               color:{% if row.source == 'local' %}#4ec94e{% else %}#ddd{% endif %}">
+      {{ row.value }}
+      {% if row.source == 'local' %}<span style="color:#e8a23a; font-size:.75rem; margin-left:.5rem">(local)</span>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+{% set local_rows = detail | selectattr('source', 'equalto', 'local') | list %}
+{% set auto_rows  = detail | selectattr('source', 'equalto', 'auto')  | list %}
+{% if local_rows and not auto_rows %}
+<p style="margin-top:1.2rem; color:#4ec94e; font-size:.78rem">L manual entry — bwpub.local.conf only (not in auto config)</p>
+{% elif local_rows %}
+<p style="margin-top:1.2rem; color:#e8a23a; font-size:.78rem">* local override in bwpub.local.conf</p>
+{% endif %}
+{% endif %}

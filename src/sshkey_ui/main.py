@@ -15,6 +15,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sshkey_ui import bitwarden as bw
 from sshkey_ui import manifest as mf
 from sshkey_ui import deployment as dep
+from sshkey_ui import config_reader as cr
 from sshkey_ui.sync import run_sync
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -353,6 +354,62 @@ async def save_manifest(request: Request):
     entries = [{"alias": a, "user": u} for a, u in zip(aliases, users) if a.strip()]
     mf.save(entries)
     return RedirectResponse(url="/manifest", status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# Config overview
+# ---------------------------------------------------------------------------
+
+@app.get("/config", response_class=HTMLResponse)
+async def config_page(request: Request):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+    auto, local = cr.load()
+    local_hosts = set(local.keys())
+    local_only  = local_hosts - set(auto.keys())
+    hosts = sorted(set(auto.keys()) | local_hosts)
+    first = hosts[0] if hosts else None
+    first_detail = _build_detail(first, auto, local) if first else {}
+    return templates.TemplateResponse(request, "config.html", {
+        "hosts": hosts,
+        "local_hosts": local_hosts,
+        "local_only": local_only,
+        "selected": first,
+        "detail": first_detail,
+    })
+
+
+@app.get("/config/detail", response_class=HTMLResponse)
+async def config_detail(request: Request, host: str = ""):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return HTMLResponse("")
+    auto, local = cr.load()
+    detail = _build_detail(host, auto, local)
+    return templates.TemplateResponse(request, "partials/config_detail.html", {
+        "host": host,
+        "detail": detail,
+    })
+
+
+def _build_detail(
+    host: str | None,
+    auto: dict[str, dict[str, str]],
+    local: dict[str, dict[str, str]],
+) -> list[dict]:
+    """Merge auto + local directives into a list of {key, value, source} dicts."""
+    if not host:
+        return []
+    rows = []
+    seen: set[str] = set()
+    for key, value in (local.get(host) or {}).items():
+        rows.append({"key": key, "value": value, "source": "local"})
+        seen.add(key.lower())
+    for key, value in (auto.get(host) or {}).items():
+        if key.lower() not in seen:
+            rows.append({"key": key, "value": value, "source": "auto"})
+    return rows
 
 
 # ---------------------------------------------------------------------------

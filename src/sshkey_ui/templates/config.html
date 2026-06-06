@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Config Overview — SSH Key Manager{% endblock %}
+{% block content %}
+<style>
+  .config-wrap {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    height: calc(100vh - 56px);
+    border: 1px solid #222;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .host-list {
+    background: #0d0d0d;
+    border-right: 1px solid #222;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: .82rem;
+  }
+  .host-item {
+    padding: .28rem .75rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    color: #ccc;
+    border-left: 2px solid transparent;
+    user-select: none;
+  }
+  .host-item:hover  { background: #1a1a1a; color: #fff; }
+  .host-item.active { background: #1a3a5a; color: #fff; border-left-color: #4a9fd4; }
+  .host-item .star      { color: #e8a23a; margin-left: .4rem; flex-shrink: 0; }
+  .host-item.local-only { color: #4ec94e; }
+  .config-detail {
+    background: #111;
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+    font-family: monospace;
+  }
+</style>
+
+<div class="config-wrap">
+  <!-- left: host list -->
+  <div class="host-list" id="host-list">
+    {% for h in hosts %}
+    <div class="host-item {% if h == selected %}active{% endif %} {% if h in local_only %}local-only{% endif %}"
+         hx-get="/config/detail?host={{ h | urlencode }}"
+         hx-target="#config-detail"
+         hx-swap="innerHTML"
+         onclick="setActive(this)">
+      <span>{{ h }}</span>
+      {% if h in local_only %}
+        <span class="star" title="Manual entry in bwpub.local.conf only">L</span>
+      {% elif h in local_hosts %}
+        <span class="star" title="Has local override in bwpub.local.conf">*</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- right: stanza detail -->
+  <div class="config-detail" id="config-detail">
+    {% include "partials/config_detail.html" %}
+  </div>
+</div>
+
+<script>
+function setActive(el) {
+  document.querySelectorAll('.host-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+}
+</script>
+{% endblock %}
