@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SSH Key Manager{% endblock %}
+{% block content %}
+
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem; flex-wrap:wrap">
+  <h2 style="margin:0">SSH Keys</h2>
+  <button hx-post="/sync"
+          hx-target="#sync-log"
+          hx-swap="innerHTML"
+          hx-indicator="#sync-spinner"
+          class="outline">
+    Sync
+    <span id="sync-spinner" class="htmx-indicator"> ⏳</span>
+  </button>
+  <button hx-post="/keys/check-all"
+          hx-target="#key-table"
+          hx-swap="outerHTML"
+          hx-indicator="#check-spinner"
+          class="outline secondary">
+    Check all
+    <span id="check-spinner" class="htmx-indicator"> ⏳</span>
+  </button>
+  <button onclick="document.getElementById('new-key-dialog').showModal()" class="outline contrast">
+    + New key
+  </button>
+  <label style="margin:0; display:flex; align-items:center; gap:.4rem; font-size:.9em; cursor:pointer">
+    <input type="checkbox" id="show-shared" role="switch"
+           onchange="reloadKeys()" style="margin:0">
+    Show shared
+  </label>
+</div>
+
+<div id="sync-log"></div>
+
+<div hx-get="/keys" hx-trigger="load" hx-swap="outerHTML" id="key-table-wrapper">
+  <p aria-busy="true">Loading keys…</p>
+</div>
+
+<script>
+function reloadKeys() {
+  const shared = document.getElementById('show-shared').checked;
+  htmx.ajax('GET', '/keys?show_shared=' + shared, {target: '#key-table', swap: 'outerHTML'});
+}
+</script>
+
+<!-- New key modal -->
+<dialog id="new-key-dialog">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" onclick="document.getElementById('new-key-dialog').close()"></button>
+      <h3>New SSH Key</h3>
+    </header>
+    <form method="post" action="/keys/create">
+      <div class="grid">
+        <label>Alias <input name="alias" placeholder="myserver" required></label>
+        <label>User  <input name="user"  placeholder="root" required></label>
+      </div>
+      <div class="grid">
+        <label>Hostname <input name="hostname" placeholder="10.0.0.1 or server.example.com"></label>
+        <label>Port     <input name="port" value="22" style="width:6rem"></label>
+      </div>
+      <label>Password (optional) <input type="password" name="password"></label>
+      <label>Key type
+        <select name="key_type">
+          <option value="ed25519" selected>ed25519 (recommended)</option>
+          <option value="rsa" >rsa 4096</option>
+        </select>
+      </label>
+      <small>⚠ Private key touches disk briefly during creation.</small>
+      <footer>
+        <button type="submit">Create</button>
+        <button type="button" class="outline secondary"
+                onclick="document.getElementById('new-key-dialog').close()">Cancel</button>
+      </footer>
+    </form>
+  </article>
+</dialog>
+
+{% endblock %}

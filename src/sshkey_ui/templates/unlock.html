@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unlock — SSH Key Manager</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .unlock-box { width: 100%; max-width: 360px; }
+  </style>
+</head>
+<body>
+  <main class="container unlock-box">
+    <h2>Unlock Bitwarden</h2>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <form method="post" action="/unlock">
+      <label>
+        Master password
+        <input type="password" name="password" autofocus required>
+      </label>
+      <button type="submit">Unlock</button>
+    </form>
+    <small>Session is stored locally for up to 30 days.</small>
+  </main>
+</body>
+</html>

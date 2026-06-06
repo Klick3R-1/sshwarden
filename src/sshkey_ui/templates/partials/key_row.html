@@ -1,0 +1,88 @@
+<tr id="row-{{ item.id }}">
+  <td>
+    <kbd>{{ item.alias }}</kbd>
+    {% if not item.name %}
+    <span class="badge badge-danger" title="No name set in Bitwarden — give this item a name">nameless</span>
+    {% endif %}
+    {% if item.is_shared %}
+    <span class="badge badge-unknown" title="Shared/org vault">shared</span>
+    {% endif %}
+    {% if not item.migrated and not item.is_simple and item.name %}
+    <span class="badge badge-migrate" title="Using old name convention — migrate to custom fields">migrate</span>
+    {% endif %}
+  </td>
+  <td>{{ item.user or "—" }}</td>
+  <td>{{ item.hostname or "—" }}</td>
+  <td>{{ item.port }}</td>
+  <td><small title="{{ item.fingerprint }}">{{ item.fingerprint[:28] }}…</small></td>
+  <td>
+    <span class="badge badge-{{ item.age_color }}">{{ item.age_label }}</span>
+  </td>
+  <td>
+    {% if agent %}
+      <span class="badge badge-yes">✓</span>
+    {% else %}
+      <span class="badge badge-no">✗</span>
+    {% endif %}
+  </td>
+  <td>
+    <div class="pw-cell">
+      <span id="pw-{{ item.id }}">••••••</span>
+      {% if item.migrated %}
+      <button class="outline secondary"
+              style="padding:.1rem .5rem; font-size:.8em"
+              hx-get="/keys/{{ item.id }}/password"
+              hx-target="#pw-{{ item.id }}"
+              hx-swap="innerHTML">
+        show
+      </button>
+      {% else %}
+      <small>—</small>
+      {% endif %}
+    </div>
+  </td>
+  <td>
+    {% if item.is_simple %}
+      <span class="badge badge-unknown" title="Simple key — no server target">—</span>
+    {% elif dep_status == "confirmed" %}
+      <span class="badge badge-ok">✓</span>
+    {% elif dep_status == "missing" %}
+      <span class="badge badge-missing">✗ missing</span>
+    {% elif dep_status == "unreachable" %}
+      <span class="badge badge-warn">⚠ unreachable</span>
+    {% else %}
+      <span class="badge badge-unknown">?</span>
+    {% endif %}
+  </td>
+  <td>
+    {% if item.is_simple %}
+      {# simple keys like GitHub don't need migrate or deploy check #}
+    {% elif not item.migrated %}
+    <details>
+      <summary style="font-size:.8em; cursor:pointer; list-style:none">▸ Migrate</summary>
+      <form hx-post="/keys/{{ item.id }}/migrate"
+            hx-target="#row-{{ item.id }}"
+            hx-swap="outerHTML"
+            style="margin-top:.5rem">
+        <div class="grid">
+          <input name="alias"    value="{{ item.alias }}"    placeholder="alias" required>
+          <input name="user"     value="{{ item.user }}"     placeholder="user">
+        </div>
+        <div class="grid">
+          <input name="hostname" value="{{ item.hostname }}" placeholder="hostname">
+          <input name="port"     value="{{ item.port }}"     placeholder="22" style="width:5rem">
+        </div>
+        <button type="submit" style="font-size:.8em; margin-top:.3rem">Save</button>
+      </form>
+    </details>
+    {% else %}
+    <button class="outline secondary"
+            style="padding:.2rem .6rem; font-size:.8em"
+            hx-post="/keys/{{ item.id }}/check"
+            hx-target="#row-{{ item.id }}"
+            hx-swap="outerHTML">
+      Check
+    </button>
+    {% endif %}
+  </td>
+</tr>

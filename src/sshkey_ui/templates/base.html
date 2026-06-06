@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SSH Key Manager{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <style>
+    nav { margin-bottom: 2rem; }
+    .badge { display: inline-block; padding: .15em .5em; border-radius: 4px; font-size: .8em; font-weight: 600; }
+    .badge-ok      { background: #1a7a3a; color: #d4f7e0; }
+    .badge-warn    { background: #7a5a1a; color: #f7e8d4; }
+    .badge-danger  { background: #7a1a1a; color: #f7d4d4; }
+    .badge-unknown { background: #444; color: #ccc; }
+    .badge-yes     { background: #1a4a7a; color: #d4e8f7; }
+    .badge-no      { background: #555; color: #aaa; }
+    .badge-missing { background: #7a1a1a; color: #f7d4d4; }
+    .badge-migrate { background: #5a3a7a; color: #e8d4f7; }
+    kbd  { font-size: .85em; }
+    #sync-log { white-space: pre-wrap; font-family: monospace; font-size: .85em;
+                background: #111; padding: 1rem; border-radius: 6px; max-height: 300px; overflow-y: auto; }
+    .htmx-indicator { opacity: 0; transition: opacity 200ms; }
+    .htmx-request .htmx-indicator { opacity: 1; }
+    .htmx-request.htmx-indicator  { opacity: 1; }
+    table { font-size: .88em; }
+    th, td { vertical-align: middle; }
+    .pw-cell { display: flex; align-items: center; gap: .4rem; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <nav>
+      <ul>
+        <li><strong>SSH Key Manager</strong></li>
+      </ul>
+      <ul>
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/manifest">Deployments</a></li>
+        <li>
+          <form method="post" action="/lock" style="margin:0">
+            <button type="submit" class="outline secondary" style="padding:.3rem .8rem">Lock</button>
+          </form>
+        </li>
+      </ul>
+    </nav>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

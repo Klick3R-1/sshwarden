@@ -1,0 +1,359 @@
+"""sshkey-ui — FastAPI web application."""
+
+from __future__ import annotations
+
+import subprocess
+from pathlib import Path
+from typing import Annotated
+
+import uvicorn
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+from sshkey_ui import bitwarden as bw
+from sshkey_ui import manifest as mf
+from sshkey_ui import deployment as dep
+from sshkey_ui.sync import run_sync
+
+TEMPLATES_DIR = Path(__file__).parent / "templates"
+_jinja_env = Environment(
+    loader=FileSystemLoader(str(TEMPLATES_DIR)),
+    autoescape=select_autoescape(["html"]),
+    cache_size=0,  # workaround for Jinja2 LRU cache bug on Python 3.14
+)
+templates = Jinja2Templates(env=_jinja_env)
+
+app = FastAPI(title="sshkey-ui")
+
+PORT = 8765
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _session(request: Request) -> str | None:
+    return bw.get_session()
+
+
+def _agent_fingerprints() -> set[str]:
+    """Return fingerprints currently loaded in the SSH agent."""
+    try:
+        result = subprocess.run(
+            ["ssh-add", "-l", "-E", "sha256"],
+            capture_output=True, text=True,
+        )
+        fps: set[str] = set()
+        for line in result.stdout.splitlines():
+            parts = line.split()
+            if len(parts) >= 2 and parts[1].startswith("SHA256:"):
+                fps.add(parts[1])
+        return fps
+    except Exception:
+        return set()
+
+
+def _redirect_unlock() -> RedirectResponse:
+    return RedirectResponse(url="/unlock", status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# Unlock / lock
+# ---------------------------------------------------------------------------
+
+@app.get("/unlock", response_class=HTMLResponse)
+async def unlock_page(request: Request, error: str = ""):
+    return templates.TemplateResponse(request, "unlock.html", {"error": error})
+
+
+@app.post("/unlock")
+async def do_unlock(password: Annotated[str, Form()]):
+    try:
+        bw.unlock(password)
+    except bw.BWError as e:
+        return RedirectResponse(url=f"/unlock?error={e}", status_code=302)
+    return RedirectResponse(url="/", status_code=302)
+
+
+@app.post("/lock")
+async def do_lock(request: Request):
+    session = _session(request)
+    if session:
+        bw.lock(session)
+    return RedirectResponse(url="/unlock", status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# Dashboard
+# ---------------------------------------------------------------------------
+
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+    return templates.TemplateResponse(request, "index.html")
+
+
+@app.get("/keys", response_class=HTMLResponse)
+async def keys_partial(request: Request, show_shared: bool = False):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return HTMLResponse('<p class="error">Session expired — <a href="/unlock">unlock</a></p>')
+
+    items = bw.list_ssh_items(session)
+    if not show_shared:
+        items = [i for i in items if not i.is_shared]
+
+    agent_fps = _agent_fingerprints()
+    deployments = mf.load()
+
+    rows = []
+    for item in items:
+        dep_status = dep.manifest_status(item, deployments)
+        rows.append({
+            "item": item,
+            "agent": item.fingerprint in agent_fps,
+            "dep_status": dep_status,
+        })
+
+    return templates.TemplateResponse(request, "partials/key_table.html", {"rows": rows})
+
+
+# ---------------------------------------------------------------------------
+# Sync
+# ---------------------------------------------------------------------------
+
+@app.post("/sync", response_class=HTMLResponse)
+async def do_sync(request: Request):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+
+    lines: list[str] = []
+    try:
+        for line in run_sync(session, clean=True):
+            lines.append(line)
+    except bw.BWError as e:
+        lines.append(f"[ERROR] {e}")
+
+    output = "\n".join(lines)
+    return templates.TemplateResponse(request, "partials/sync_log.html", {"output": output})
+
+
+# ---------------------------------------------------------------------------
+# Deployment check
+# ---------------------------------------------------------------------------
+
+@app.post("/keys/{item_id}/check", response_class=HTMLResponse)
+async def check_key(request: Request, item_id: str):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+
+    items = bw.list_ssh_items(session)
+    item = next((i for i in items if i.id == item_id), None)
+    if not item:
+        return HTMLResponse("Not found", status_code=404)
+
+    status = await dep.live_check(item)
+    agent_fps = _agent_fingerprints()
+    deployments = mf.load()
+
+    return templates.TemplateResponse(request, "partials/key_row.html", {
+        "item": item,
+        "agent": item.fingerprint in agent_fps,
+        "dep_status": status,
+    })
+
+
+@app.post("/keys/check-all", response_class=HTMLResponse)
+async def check_all(request: Request):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+
+    items = bw.list_ssh_items(session)
+    agent_fps = _agent_fingerprints()
+    deployments = mf.load()
+
+    rows = []
+    for item in items:
+        status = await dep.live_check(item)
+        rows.append({
+            "item": item,
+            "agent": item.fingerprint in agent_fps,
+            "dep_status": status,
+        })
+
+    return templates.TemplateResponse(request, "partials/key_table.html", {"rows": rows})
+
+
+# ---------------------------------------------------------------------------
+# Password reveal
+# ---------------------------------------------------------------------------
+
+@app.get("/keys/{item_id}/password", response_class=HTMLResponse)
+async def reveal_password(request: Request, item_id: str):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return HTMLResponse("locked")
+    try:
+        pwd = bw.get_item_password(item_id, session)
+    except bw.BWError:
+        pwd = ""
+    return HTMLResponse(f'<code>{pwd or "(none)"}</code>')
+
+
+# ---------------------------------------------------------------------------
+# Migrate item
+# ---------------------------------------------------------------------------
+
+@app.post("/keys/{item_id}/migrate", response_class=HTMLResponse)
+async def migrate_item(
+    request: Request,
+    item_id: str,
+    alias: Annotated[str, Form()],
+    user: Annotated[str, Form()],
+    hostname: Annotated[str, Form()],
+    port: Annotated[str, Form()] = "22",
+):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+
+    try:
+        bw.migrate_item(item_id, alias=alias, user=user, hostname=hostname, port=port, session=session)
+    except bw.BWError as e:
+        return HTMLResponse(f'<span class="error">{e}</span>')
+
+    items = bw.list_ssh_items(session)
+    item = next((i for i in items if i.id == item_id), None)
+    if not item:
+        return HTMLResponse("ok")
+
+    agent_fps = _agent_fingerprints()
+    deployments = mf.load()
+    return templates.TemplateResponse(request, "partials/key_row.html", {
+        "item": item,
+        "agent": item.fingerprint in agent_fps,
+        "dep_status": dep.manifest_status(item, deployments),
+    })
+
+
+# ---------------------------------------------------------------------------
+# Key creation
+# ---------------------------------------------------------------------------
+
+@app.post("/keys/create", response_class=HTMLResponse)
+async def create_key(
+    request: Request,
+    alias: Annotated[str, Form()],
+    user: Annotated[str, Form()],
+    hostname: Annotated[str, Form()],
+    port: Annotated[str, Form()] = "22",
+    password: Annotated[str, Form()] = "",
+    key_type: Annotated[str, Form()] = "ed25519",
+):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+
+    import tempfile, os, stat
+
+    error = ""
+    try:
+        with tempfile.NamedTemporaryFile(prefix="sshkey_", delete=False) as tmp:
+            tmp_path = Path(tmp.name)
+
+        try:
+            comment = f"{alias} {user}"
+            result = subprocess.run(
+                ["ssh-keygen", "-t", key_type, "-f", str(tmp_path), "-N", "", "-C", comment],
+                capture_output=True, text=True,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(result.stderr)
+
+            private_key = tmp_path.read_text()
+            public_key = Path(str(tmp_path) + ".pub").read_text().strip()
+
+            fp_result = subprocess.run(
+                ["ssh-keygen", "-l", "-E", "sha256", "-f", str(tmp_path) + ".pub"],
+                capture_output=True, text=True,
+            )
+            fingerprint = fp_result.stdout.split()[1] if fp_result.returncode == 0 else ""
+
+            bw.create_ssh_item(
+                name=f"{alias} {user}",
+                private_key=private_key,
+                public_key=public_key,
+                fingerprint=fingerprint,
+                alias=alias,
+                user=user,
+                hostname=hostname,
+                port=port,
+                password=password,
+                session=session,
+            )
+        finally:
+            # shred private key immediately
+            subprocess.run(["shred", "-u", str(tmp_path)], capture_output=True)
+            pub = Path(str(tmp_path) + ".pub")
+            if pub.exists():
+                pub.unlink()
+
+        # sync to write the new .pub file
+        for _ in run_sync(session):
+            pass
+
+    except Exception as e:
+        error = str(e)
+
+    if error:
+        return templates.TemplateResponse(request, "partials/create_error.html", {"error": error})
+    return RedirectResponse(url="/", status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# Manifest editor
+# ---------------------------------------------------------------------------
+
+@app.get("/manifest", response_class=HTMLResponse)
+async def manifest_page(request: Request):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+    deployments = mf.load()
+    items = bw.list_ssh_items(session)
+    return templates.TemplateResponse(request, "manifest.html", {
+        "deployments": deployments,
+        "items": items,
+    })
+
+
+@app.post("/manifest")
+async def save_manifest(request: Request):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+    form = await request.form()
+    aliases = form.getlist("alias")
+    users = form.getlist("user")
+    entries = [{"alias": a, "user": u} for a, u in zip(aliases, users) if a.strip()]
+    mf.save(entries)
+    return RedirectResponse(url="/manifest", status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# Entrypoint
+# ---------------------------------------------------------------------------
+
+def run() -> None:
+    uvicorn.run("sshkey_ui.main:app", host="127.0.0.1", port=PORT, reload=False)
+
+
+if __name__ == "__main__":
+    run()

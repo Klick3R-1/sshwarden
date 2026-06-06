@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Deployments — SSH Key Manager{% endblock %}
+{% block content %}
+
+<h2>Deployment Manifest</h2>
+<p>Declare which keys should be deployed on which servers. Hostname and port are read from Bitwarden — no duplication needed.</p>
+
+<form method="post" action="/manifest">
+  <table role="grid">
+    <thead>
+      <tr><th>Alias</th><th>User</th><th>Hostname (from BW)</th><th></th></tr>
+    </thead>
+    <tbody id="manifest-rows">
+      {% for dep in deployments %}
+      {% set match = items | selectattr("alias","equalto",dep.alias) | selectattr("user","equalto",dep.user) | first | default(none) %}
+      <tr>
+        <td><input name="alias" value="{{ dep.alias }}" required></td>
+        <td><input name="user"  value="{{ dep.user }}"></td>
+        <td><small>{{ match.hostname if match else "—" }}</small></td>
+        <td><button type="button" class="outline secondary"
+                    onclick="this.closest('tr').remove()"
+                    style="padding:.2rem .6rem">✕</button></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <button type="button" class="outline"
+          onclick="addRow()">+ Add entry</button>
+
+  <div style="margin-top:1rem">
+    <button type="submit">Save</button>
+    <a href="/" role="button" class="outline secondary">Cancel</a>
+  </div>
+</form>
+
+<script>
+function addRow() {
+  const tbody = document.getElementById('manifest-rows');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input name="alias" required></td>
+    <td><input name="user"></td>
+    <td><small>—</small></td>
+    <td><button type="button" class="outline secondary"
+                onclick="this.closest('tr').remove()"
+                style="padding:.2rem .6rem">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+  tr.querySelector('input').focus();
+}
+</script>
+{% endblock %}
