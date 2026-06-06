@@ -7,29 +7,59 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
   <style>
-    nav { margin-bottom: 2rem; }
-    .badge { display: inline-block; padding: .15em .5em; border-radius: 4px; font-size: .8em; font-weight: 600; }
+    /* ── layout ── */
+    :root { --pico-spacing: .75rem; --pico-font-size: 14px; }
+    body { padding: 0; }
+    /* full-width override for pico's .container */
+    .container { max-width: 100% !important; padding-inline: 1.25rem; }
+
+    /* ── nav ── */
+    nav { padding-block: .4rem; margin-bottom: .75rem; border-bottom: 1px solid #2a2a2a; }
+    nav ul { margin: 0; gap: .75rem; }
+    nav li { padding: 0; }
+    nav a  { font-size: .85rem; }
+    nav strong { font-size: .9rem; }
+
+    /* ── buttons ── */
+    button, [role="button"] { --pico-form-element-spacing-vertical: .3rem; --pico-form-element-spacing-horizontal: .7rem; font-size: .82rem; }
+
+    /* ── table ── */
+    table { font-size: .82rem; }
+    thead th { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: #888; padding-block: .35rem; white-space: nowrap; }
+    td { padding-block: .35rem; padding-inline: .6rem; vertical-align: middle; white-space: nowrap; }
+    th { padding-inline: .6rem; }
+    figure { margin: 0; overflow-x: auto; }
+
+    /* ── badges ── */
+    .badge { display: inline-block; padding: .1em .45em; border-radius: 3px; font-size: .72rem; font-weight: 700; letter-spacing: .02em; }
     .badge-ok      { background: #1a7a3a; color: #d4f7e0; }
     .badge-warn    { background: #7a5a1a; color: #f7e8d4; }
     .badge-danger  { background: #7a1a1a; color: #f7d4d4; }
-    .badge-unknown { background: #444; color: #ccc; }
+    .badge-unknown { background: #333; color: #999; }
     .badge-yes     { background: #1a4a7a; color: #d4e8f7; }
-    .badge-no      { background: #555; color: #aaa; }
+    .badge-no      { background: #2a2a2a; color: #666; }
     .badge-missing { background: #7a1a1a; color: #f7d4d4; }
-    .badge-migrate { background: #5a3a7a; color: #e8d4f7; }
-    kbd  { font-size: .85em; }
-    #sync-log { white-space: pre-wrap; font-family: monospace; font-size: .85em;
-                background: #111; padding: 1rem; border-radius: 6px; max-height: 300px; overflow-y: auto; }
-    .htmx-indicator { opacity: 0; transition: opacity 200ms; }
-    .htmx-request .htmx-indicator { opacity: 1; }
+    .badge-migrate { background: #3a2a5a; color: #c8b8e8; }
+
+    /* ── misc ── */
+    kbd { font-size: .8rem; padding: .1em .35em; }
+    #sync-log { white-space: pre-wrap; font-family: monospace; font-size: .78rem;
+                background: #0d0d0d; padding: .6rem .8rem; border-radius: 4px;
+                max-height: 220px; overflow-y: auto; margin-bottom: .5rem; }
+    .htmx-indicator { opacity: 0; transition: opacity 150ms; }
+    .htmx-request .htmx-indicator,
     .htmx-request.htmx-indicator  { opacity: 1; }
-    table { font-size: .88em; }
-    th, td { vertical-align: middle; }
-    .pw-cell { display: flex; align-items: center; gap: .4rem; }
+    .pw-cell { display: flex; align-items: center; gap: .3rem; }
+    summary { font-size: .78rem; cursor: pointer; list-style: none; color: #888; }
+    summary:hover { color: #ccc; }
+    details[open] summary { color: #ccc; }
+    details form { margin-top: .4rem; }
+    details input { padding: .2rem .4rem; font-size: .78rem; height: auto; }
+    details .grid { gap: .3rem; margin-bottom: .3rem; }
   </style>
 </head>
 <body>
-  <main class="container">
+  <div class="container">
     <nav>
       <ul>
         <li><strong>SSH Key Manager</strong></li>
@@ -39,12 +69,12 @@
         <li><a href="/manifest">Deployments</a></li>
         <li>
           <form method="post" action="/lock" style="margin:0">
-            <button type="submit" class="outline secondary" style="padding:.3rem .8rem">Lock</button>
+            <button type="submit" class="outline secondary">Lock</button>
           </form>
         </li>
       </ul>
     </nav>
     {% block content %}{% endblock %}
-  </main>
+  </div>
 </body>
 </html>

@@ -18,11 +18,17 @@ from sshkey_ui import deployment as dep
 from sshkey_ui.sync import run_sync
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
+def _user_color(user: str) -> str:
+    """Deterministic HSL color from username — same user always same color."""
+    hue = sum(ord(c) * (i + 1) for i, c in enumerate(user)) % 360
+    return f"hsl({hue}, 60%, 62%)"
+
 _jinja_env = Environment(
     loader=FileSystemLoader(str(TEMPLATES_DIR)),
     autoescape=select_autoescape(["html"]),
     cache_size=0,  # workaround for Jinja2 LRU cache bug on Python 3.14
 )
+_jinja_env.filters["user_color"] = _user_color
 templates = Jinja2Templates(env=_jinja_env)
 
 app = FastAPI(title="sshkey-ui")
@@ -132,6 +138,7 @@ async def do_sync(request: Request):
     if not session or not bw.is_unlocked(session):
         return _redirect_unlock()
 
+    bw.invalidate_cache()
     lines: list[str] = []
     try:
         for line in run_sync(session, clean=True):
@@ -226,6 +233,7 @@ async def migrate_item(
 
     try:
         bw.migrate_item(item_id, alias=alias, user=user, hostname=hostname, port=port, session=session)
+        bw.invalidate_cache()
     except bw.BWError as e:
         return HTMLResponse(f'<span class="error">{e}</span>')
 
@@ -305,7 +313,7 @@ async def create_key(
             if pub.exists():
                 pub.unlink()
 
-        # sync to write the new .pub file
+        bw.invalidate_cache()
         for _ in run_sync(session):
             pass
 

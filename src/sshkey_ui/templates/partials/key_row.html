@@ -1,6 +1,6 @@
 <tr id="row-{{ item.id }}">
   <td>
-    <kbd>{{ item.alias }}</kbd>
+    <kbd>{{ item.alias }}{% if item.user %}<span style="opacity:.45">::</span><span style="color:{{ item.user | user_color }}">{{ item.user }}</span>{% endif %}</kbd>
     {% if not item.name %}
     <span class="badge badge-danger" title="No name set in Bitwarden — give this item a name">nameless</span>
     {% endif %}

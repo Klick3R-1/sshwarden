@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import subprocess
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,6 +14,22 @@ from pathlib import Path
 BW_BIN = "/usr/local/bin/bw"
 SESSION_FILE = Path.home() / ".config" / "sshkey-ui" / "session.json"
 SESSION_MAX_DAYS = 30
+
+# ---------------------------------------------------------------------------
+# In-process TTL caches
+# ---------------------------------------------------------------------------
+_ITEMS_TTL  = 30   # seconds — full vault list
+_STATUS_TTL = 60   # seconds — is_unlocked check
+
+_items_cache:  tuple[float, list] | None = None
+_status_cache: tuple[float, bool] | None = None
+
+
+def invalidate_cache() -> None:
+    """Call after any write operation (sync, migrate, create)."""
+    global _items_cache, _status_cache
+    _items_cache  = None
+    _status_cache = None
 
 # Bitwarden SSH key item type
 BW_TYPE_SSH_KEY = 5
@@ -77,19 +95,20 @@ def lock(session: str) -> None:
 
 def is_unlocked(session: str | None) -> bool:
     """Return True if the session token is valid and vault is unlocked."""
+    global _status_cache
     if not session:
         return False
+    now = time.monotonic()
+    if _status_cache and (now - _status_cache[0]) < _STATUS_TTL:
+        return _status_cache[1]
     result = subprocess.run(
         [BW_BIN, "status", "--session", session],
         capture_output=True,
         text=True,
     )
-    if result.returncode != 0:
-        return False
-    try:
-        return json.loads(result.stdout).get("status") == "unlocked"
-    except Exception:
-        return False
+    ok = result.returncode == 0 and json.loads(result.stdout).get("status") == "unlocked"
+    _status_cache = (now, ok)
+    return ok
 
 
 # ---------------------------------------------------------------------------
@@ -128,11 +147,12 @@ class SSHKeyItem:
     @property
     def host_alias(self) -> str:
         """SSH config Host value."""
-        return f"{self.alias}_{self.user}" if self.user else self.alias
+        return f"{self.alias}::{self.user}" if self.user else self.alias
 
     @property
     def pub_filename(self) -> str:
-        return f"{self.host_alias}.pub"
+        """Filesystem-safe filename — :: becomes __ on disk."""
+        return f"{self.host_alias.replace('::', '__')}.pub"
 
     @property
     def age_days(self) -> int | None:
@@ -184,8 +204,13 @@ def _bw(*args: str, session: str) -> str:
     return result.stdout.strip()
 
 
-def list_ssh_items(session: str) -> list[SSHKeyItem]:
+def list_ssh_items(session: str, *, force: bool = False) -> list[SSHKeyItem]:
     """Return all SSH key items (type 5) from the vault."""
+    global _items_cache
+    now = time.monotonic()
+    if not force and _items_cache and (now - _items_cache[0]) < _ITEMS_TTL:
+        return _items_cache[1]
+
     from sshkey_ui.parser import parse_item_name
 
     raw = _bw("list", "items", "--nointeraction", session=session)
@@ -244,6 +269,7 @@ def list_ssh_items(session: str) -> list[SSHKeyItem]:
             migrated=migrated,
             organization_id=org_id,
         ))
+    _items_cache = (time.monotonic(), items)
     return items
 
 
@@ -290,11 +316,10 @@ def create_ssh_item(
         },
         "fields": fields,
     }
-    encoded = _bw("encode", session=session)  # not needed; use stdin approach
-    # bw create item reads JSON from stdin
+    encoded = base64.b64encode(json.dumps(payload).encode()).decode()
     result = subprocess.run(
         [BW_BIN, "create", "item", "--session", session],
-        input=json.dumps(payload),
+        input=encoded,
         capture_output=True,
         text=True,
     )
@@ -325,10 +350,12 @@ def migrate_item(
         {"name": "port",     "value": port,     "type": 0},
     ]
     obj["fields"] = existing
+    obj["name"] = f"{alias}::{user}" if user else alias
 
+    encoded = base64.b64encode(json.dumps(obj).encode()).decode()
     result = subprocess.run(
         [BW_BIN, "edit", "item", item_id, "--session", session],
-        input=json.dumps(obj),
+        input=encoded,
         capture_output=True,
         text=True,
     )

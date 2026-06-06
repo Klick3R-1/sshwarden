@@ -20,7 +20,7 @@ LOCAL_CONF = Path.home() / ".ssh" / "config.d" / "bwpub.local.conf"
 
 def _sanitize(s: str) -> str:
     import re
-    return re.sub(r"[^A-Za-z0-9._-]+", "_", s)
+    return re.sub(r"[^A-Za-z0-9._:-]+", "_", s)
 
 
 def _pub_path(item: SSHKeyItem) -> Path:
