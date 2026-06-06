@@ -15,6 +15,7 @@ def _parse(path: Path) -> dict[str, dict[str, str]]:
     if not path.exists():
         return stanzas
     for line in path.read_text().splitlines():
+        line = line.replace("\r", "")
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue

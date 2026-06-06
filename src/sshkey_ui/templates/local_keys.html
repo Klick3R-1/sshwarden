@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Local Keys — SSH Key Manager{% endblock %}
+{% block content %}
+
+<div style="display:flex; align-items:center; gap:.6rem; margin-bottom:.75rem; flex-wrap:wrap">
+  <h3 style="margin:0">Local Keys</h3>
+  <button onclick="document.getElementById('import-dialog').showModal()" class="outline contrast">
+    + Import from BW
+  </button>
+  <small style="color:#555">Keys in ~/.ssh/local/ — usable without Bitwarden agent</small>
+</div>
+
+{% if error %}
+<p style="color:#f77; font-size:.85rem; font-family:monospace">{{ error }}</p>
+{% endif %}
+
+{% if not keys %}
+<p style="color:#555; font-family:monospace; font-size:.85rem">
+  No local keys yet. Import one from Bitwarden using the button above.
+</p>
+{% else %}
+<figure>
+<table role="grid">
+  <thead>
+    <tr>
+      <th>Alias</th>
+      <th>Fingerprint</th>
+      <th>Type</th>
+      <th>Age</th>
+      <th>local.conf</th>
+      <th>Public key</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for k in keys %}
+    <tr>
+      <td>
+        <kbd>{{ k.alias }}{% if k.user %}<span style="opacity:.45">::</span><span style="color:{{ k.user | user_color }}">{{ k.user }}</span>{% endif %}</kbd>
+      </td>
+      <td><small title="{{ k.fingerprint }}">{{ k.fingerprint[:28] }}…</small></td>
+      <td><span class="badge badge-unknown">{{ k.key_type }}</span></td>
+      <td><span class="badge badge-{{ k.age_color }}">{{ k.age_label }}</span></td>
+      <td>
+        {% if k.in_local_conf %}
+          <span class="badge badge-ok">✓</span>
+        {% else %}
+          <span class="badge badge-unknown">—</span>
+        {% endif %}
+      </td>
+      <td style="max-width:360px">
+        <code style="font-size:.7rem; color:#777; word-break:break-all; white-space:normal">{{ k.pub_content }}</code>
+      </td>
+      <td>
+        <form method="post" action="/local-keys/{{ k.stem }}/delete"
+              onsubmit="return confirm('Delete local copy of {{ k.stem }}? (BW entry unaffected)')">
+          <button type="submit" class="outline secondary"
+                  style="padding:.15rem .5rem; font-size:.78rem; color:#c44">✕</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</figure>
+{% endif %}
+
+<!-- Import modal -->
+<dialog id="import-dialog">
+  <article style="max-width:480px">
+    <header>
+      <button aria-label="Close" rel="prev"
+              onclick="document.getElementById('import-dialog').close()"></button>
+      <h3>Import from Bitwarden</h3>
+    </header>
+    <form method="post" action="/local-keys/import">
+      <label>Select key
+        <select name="item_id" required onchange="updateHostname(this)">
+          <option value="">— choose —</option>
+          {% for item in importable %}
+          <option value="{{ item.id }}"
+                  data-hostname="{{ item.hostname }}"
+                  data-port="{{ item.port }}">
+            {{ item.alias }}{% if item.user %}::{{ item.user }}{% endif %}
+            {% if item.hostname %} ({{ item.hostname }}){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="grid">
+        <label>Hostname override
+          <input name="hostname" id="import-hostname" placeholder="auto from BW">
+        </label>
+        <label>Port
+          <input name="port" id="import-port" value="22" style="width:5rem">
+        </label>
+      </div>
+      <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer">
+        <input type="checkbox" name="add_to_conf" value="true" style="margin:0">
+        Add Host entry to bwpub.local.conf
+      </label>
+      <small style="color:#555; display:block; margin-top:.3rem">
+        Private key is written to ~/.ssh/local/ — works without Bitwarden agent.
+        The BW vault copy is unchanged.
+      </small>
+      <footer style="margin-top:1rem">
+        <button type="submit">Import</button>
+        <button type="button" class="outline secondary"
+                onclick="document.getElementById('import-dialog').close()">Cancel</button>
+      </footer>
+    </form>
+  </article>
+</dialog>
+
+<script>
+function updateHostname(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const hn = document.getElementById('import-hostname');
+  const pt = document.getElementById('import-port');
+  if (opt.dataset.hostname) hn.placeholder = opt.dataset.hostname;
+  if (opt.dataset.port)     pt.value = opt.dataset.port;
+}
+</script>
+
+{% endblock %}

@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Config Overview — SSH Key Manager{% endblock %}
 {% block content %}
+
+<div style="display:flex; align-items:center; gap:.6rem; margin-bottom:.75rem">
+  <h3 style="margin:0">Config Overview</h3>
+  <button class="outline secondary"
+          hx-get="/config/local-conf"
+          hx-target="#local-conf-panel"
+          hx-swap="innerHTML">Edit local.conf</button>
+</div>
+<div id="local-conf-panel"></div>
 <style>
   .config-wrap {
     display: grid;

@@ -16,6 +16,7 @@ from sshkey_ui import bitwarden as bw
 from sshkey_ui import manifest as mf
 from sshkey_ui import deployment as dep
 from sshkey_ui import config_reader as cr
+from sshkey_ui import local_keys as lk
 from sshkey_ui.sync import run_sync
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -410,6 +411,100 @@ def _build_detail(
         if key.lower() not in seen:
             rows.append({"key": key, "value": value, "source": "auto"})
     return rows
+
+
+# ---------------------------------------------------------------------------
+# Local keys
+# ---------------------------------------------------------------------------
+
+@app.get("/local-keys", response_class=HTMLResponse)
+async def local_keys_page(request: Request):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+    keys = lk.list_local_keys()
+    bw_items = bw.list_ssh_items(session)
+    already = lk.imported_stems()
+    importable = [i for i in bw_items if i.alias and
+                  (f"{i.alias}__{i.user}" if i.user else i.alias) not in already]
+    return templates.TemplateResponse(request, "local_keys.html", {
+        "keys": keys,
+        "importable": importable,
+    })
+
+
+@app.post("/local-keys/import", response_class=HTMLResponse)
+async def import_bw_key(
+    request: Request,
+    item_id:     Annotated[str,  Form()],
+    hostname:    Annotated[str,  Form()] = "",
+    port:        Annotated[str,  Form()] = "22",
+    add_to_conf: Annotated[bool, Form()] = False,
+):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+
+    items = bw.list_ssh_items(session)
+    item = next((i for i in items if i.id == item_id), None)
+    if not item:
+        return RedirectResponse(url="/local-keys?error=Item+not+found", status_code=302)
+
+    try:
+        private_key = bw.get_item_private_key(item_id, session)
+        lk.import_from_bw(
+            alias=item.alias,
+            user=item.user,
+            hostname=hostname or item.hostname,
+            port=port or item.port or "22",
+            private_key=private_key,
+            public_key=item.public_key,
+            add_to_conf=add_to_conf,
+        )
+    except Exception as e:
+        keys = lk.list_local_keys()
+        bw_items = bw.list_ssh_items(session)
+        already = lk.imported_stems()
+        importable = [i for i in bw_items if i.alias and
+                      (f"{i.alias}__{i.user}" if i.user else i.alias) not in already]
+        return templates.TemplateResponse(request, "local_keys.html", {
+            "keys": keys, "importable": importable, "error": str(e),
+        })
+    return RedirectResponse(url="/local-keys", status_code=302)
+
+
+@app.post("/local-keys/{stem}/delete", response_class=HTMLResponse)
+async def delete_local_key(request: Request, stem: str):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+    lk.delete_local_key(stem)
+    return RedirectResponse(url="/local-keys", status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# local.conf raw editor (Config page)
+# ---------------------------------------------------------------------------
+
+@app.get("/config/local-conf", response_class=HTMLResponse)
+async def get_local_conf(request: Request):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return HTMLResponse("")
+    content = cr.LOCAL_CONF.read_text() if cr.LOCAL_CONF.exists() else ""
+    return templates.TemplateResponse(request, "partials/local_conf_editor.html",
+                                      {"content": content})
+
+
+@app.post("/config/local-conf", response_class=HTMLResponse)
+async def save_local_conf(request: Request, content: Annotated[str, Form()]):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+    cr.LOCAL_CONF.parent.mkdir(parents=True, exist_ok=True)
+    cr.LOCAL_CONF.write_text(content.replace("\r\n", "\n").replace("\r", "\n"))
+    cr.LOCAL_CONF.chmod(0o600)
+    return RedirectResponse(url="/config", status_code=302)
 
 
 # ---------------------------------------------------------------------------

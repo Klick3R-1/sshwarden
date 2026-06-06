@@ -1,0 +1,15 @@
+<form method="post" action="/config/local-conf" style="margin-top:1rem">
+  <label style="font-size:.8rem; color:#888; font-family:monospace">bwpub.local.conf</label>
+  <textarea name="content" rows="20"
+            style="font-family:monospace; font-size:.8rem; background:#0d0d0d;
+                   color:#ccc; border:1px solid #333; border-radius:4px;
+                   width:100%; resize:vertical; padding:.6rem">{{ content }}</textarea>
+  <div style="display:flex; gap:.5rem; margin-top:.5rem">
+    <button type="submit">Save</button>
+    <button type="button" class="outline secondary"
+            hx-get="/config/local-conf-close"
+            hx-target="#local-conf-panel"
+            hx-swap="outerHTML"
+            onclick="document.getElementById('local-conf-panel').remove()">Cancel</button>
+  </div>
+</form>

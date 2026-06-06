@@ -283,6 +283,12 @@ def get_item_password(item_id: str, session: str) -> str:
     return ""
 
 
+def get_item_private_key(item_id: str, session: str) -> str:
+    """Fetch the private key for a single SSH key item."""
+    raw = _bw("get", "item", item_id, "--nointeraction", session=session)
+    return json.loads(raw).get("sshKey", {}).get("privateKey", "")
+
+
 def create_ssh_item(
     *,
     name: str,
