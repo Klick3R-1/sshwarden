@@ -1,3 +1,0 @@
-[console_scripts]
-sshkey-sync = sshkey_ui.sync:main
-sshkey-ui = sshkey_ui.main:run
