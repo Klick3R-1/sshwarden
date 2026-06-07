@@ -308,8 +308,7 @@ def create_ssh_item(
         {"name": "hostname", "value": hostname, "type": 0},
         {"name": "port",     "value": port,     "type": 0},
     ]
-    if password:
-        fields.append({"name": "password", "value": password, "type": 1})  # type 1 = hidden
+    fields.append({"name": "password", "value": password, "type": 1})  # always present, even if empty
 
     payload = {
         "type": BW_TYPE_SSH_KEY,
@@ -333,7 +332,7 @@ def create_ssh_item(
     return json.loads(result.stdout.strip())["id"]
 
 
-_PROTECTED_FIELDS = {"alias", "user", "hostname", "port", "password"}
+_PROTECTED_FIELDS = {"alias", "user", "hostname", "port"}
 
 
 def get_item_custom_fields(item_id: str, session: str) -> tuple[str, list[dict]]:

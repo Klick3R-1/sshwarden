@@ -15,11 +15,7 @@
     {% for f in custom_fields %}
     <div class="field-row" style="display:grid; grid-template-columns:1fr 1fr auto auto; gap:.4rem; margin-bottom:.35rem; align-items:center">
       <input name="field_name" value="{{ f.name }}" placeholder="Name" style="font-size:.82rem">
-      {% if f.type == 1 %}
-      <input name="field_value" type="password" value="{{ f.value }}" placeholder="Value" style="font-size:.82rem">
-      {% else %}
       <input name="field_value" value="{{ f.value }}" placeholder="Value" style="font-size:.82rem">
-      {% endif %}
       <select name="field_type" style="font-size:.82rem; width:6rem">
         <option value="0"{% if f.type == 0 %} selected{% endif %}>text</option>
         <option value="1"{% if f.type == 1 %} selected{% endif %}>hidden</option>
