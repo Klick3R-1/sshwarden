@@ -12,15 +12,7 @@
     Sync
     <span id="sync-spinner" class="htmx-indicator"> ⏳</span>
   </button>
-  <button hx-post="/keys/check-all"
-          hx-target="#key-table"
-          hx-swap="outerHTML"
-          hx-indicator="#check-spinner"
-          class="outline secondary">
-    Check all
-    <span id="check-spinner" class="htmx-indicator"> ⏳</span>
-  </button>
-  <button hx-post="/clear"
+<button hx-post="/clear"
           hx-target="#sync-log"
           hx-swap="innerHTML"
           hx-indicator="#clear-spinner"

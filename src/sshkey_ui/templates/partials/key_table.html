@@ -14,8 +14,6 @@
         <th>Age</th>
         <th>Agent</th>
         <th>Password</th>
-        <th>Deployed</th>
-        <th></th>
         <th></th>
       </tr>
     </thead>
@@ -23,7 +21,6 @@
       {% for row in rows %}
         {% set item = row.item %}
         {% set agent = row.agent %}
-        {% set dep_status = row.dep_status %}
         {% set has_local_key = row.has_local_key %}
         {% include "partials/key_row.html" %}
       {% endfor %}

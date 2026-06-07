@@ -13,7 +13,6 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from sshkey_ui import bitwarden as bw
-from sshkey_ui import deployment as dep
 from sshkey_ui import config_reader as cr
 from sshkey_ui import local_keys as lk
 from sshkey_ui.sync import run_sync, run_clear
@@ -127,7 +126,6 @@ async def keys_partial(request: Request, show_shared: bool = False):
         rows.append({
             "item": item,
             "agent": item.fingerprint in agent_fps,
-            "dep_status": dep.STATUS_UNKNOWN,
             "has_local_key": item.pub_filename.removesuffix(".pub") in local_stems,
         })
 
@@ -165,62 +163,6 @@ async def do_clear(request: Request):
     lines: list[str] = list(run_clear())
     output = "\n".join(lines)
     return templates.TemplateResponse(request, "partials/sync_log.html", {"output": output})
-
-
-# ---------------------------------------------------------------------------
-# Deployment check
-# ---------------------------------------------------------------------------
-
-@app.post("/keys/{item_id}/check", response_class=HTMLResponse)
-async def check_key(request: Request, item_id: str):
-    session = _session(request)
-    if not session or not bw.is_unlocked(session):
-        return _redirect_unlock()
-
-    items = bw.list_ssh_items(session)
-    item = next((i for i in items if i.id == item_id), None)
-    if not item:
-        return HTMLResponse("Not found", status_code=404)
-
-    status, log_lines = await dep.live_check(item)
-    agent_fps = _agent_fingerprints()
-    local_stems = _local_key_stems()
-
-    return templates.TemplateResponse(request, "partials/check_result.html", {
-        "item": item,
-        "agent": item.fingerprint in agent_fps,
-        "dep_status": status,
-        "has_local_key": item.pub_filename.removesuffix(".pub") in local_stems,
-        "log": "\n".join(log_lines),
-    })
-
-
-@app.post("/keys/check-all", response_class=HTMLResponse)
-async def check_all(request: Request):
-    session = _session(request)
-    if not session or not bw.is_unlocked(session):
-        return _redirect_unlock()
-
-    items = bw.list_ssh_items(session)
-    agent_fps = _agent_fingerprints()
-    local_stems = _local_key_stems()
-
-    rows = []
-    all_logs: list[str] = []
-    for item in items:
-        status, log_lines = await dep.live_check(item)
-        rows.append({
-            "item": item,
-            "agent": item.fingerprint in agent_fps,
-            "dep_status": status,
-            "has_local_key": item.pub_filename.removesuffix(".pub") in local_stems,
-        })
-        all_logs.extend(log_lines)
-
-    return templates.TemplateResponse(request, "partials/check_all_result.html", {
-        "rows": rows,
-        "log": "\n".join(all_logs),
-    })
 
 
 # ---------------------------------------------------------------------------
@@ -273,7 +215,6 @@ async def migrate_item(
         "item": item,
         "has_local_key": item.pub_filename.removesuffix(".pub") in local_stems,
         "agent": item.fingerprint in agent_fps,
-        "dep_status": dep.STATUS_UNKNOWN,
     })
 
 

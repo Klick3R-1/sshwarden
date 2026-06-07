@@ -45,24 +45,7 @@
     </div>
   </td>
   <td>
-    {% if item.is_simple %}
-      <span class="badge badge-unknown" title="Simple key — no server target">—</span>
-    {% elif dep_status == "confirmed" %}
-      <span class="badge badge-ok">✓</span>
-    {% elif dep_status == "missing" %}
-      <span class="badge badge-missing">✗ missing</span>
-    {% elif dep_status == "unreachable" %}
-      <span class="badge badge-warn">⚠ unreachable</span>
-    {% elif dep_status == "auth_failed" %}
-      <span class="badge badge-auth-fail" title="SSH auth failed — is the BW agent running?">⚠ auth failed</span>
-    {% else %}
-      <span class="badge badge-unknown">?</span>
-    {% endif %}
-  </td>
-  <td>
-    {% if item.is_simple %}
-      {# simple keys like GitHub don't need migrate or deploy check #}
-    {% elif not item.migrated %}
+    {% if not item.migrated and not item.is_simple %}
     <details>
       <summary style="font-size:.8em; cursor:pointer; list-style:none">▸ Migrate</summary>
       <form hx-post="/keys/{{ item.id }}/migrate"
@@ -80,14 +63,6 @@
         <button type="submit" style="font-size:.8em; margin-top:.3rem">Save</button>
       </form>
     </details>
-    {% else %}
-    <button class="outline secondary"
-            style="padding:.2rem .6rem; font-size:.8em"
-            hx-post="/keys/{{ item.id }}/check"
-            hx-target="#row-{{ item.id }}"
-            hx-swap="outerHTML">
-      Check
-    </button>
     {% endif %}
   </td>
   <td>
