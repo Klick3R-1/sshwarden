@@ -283,6 +283,57 @@ async def migrate_item(
 
 
 # ---------------------------------------------------------------------------
+# Custom fields editor
+# ---------------------------------------------------------------------------
+
+@app.get("/keys/{item_id}/fields", response_class=HTMLResponse)
+async def fields_editor(request: Request, item_id: str):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return HTMLResponse('<p class="error">Session expired</p>')
+    item_name, custom_fields = bw.get_item_custom_fields(item_id, session)
+    return templates.TemplateResponse(request, "partials/fields_editor.html", {
+        "item_id": item_id,
+        "item_name": item_name,
+        "custom_fields": custom_fields,
+        "error": "",
+    })
+
+
+@app.post("/keys/{item_id}/fields", response_class=HTMLResponse)
+async def save_fields(
+    request: Request,
+    item_id: str,
+    field_name:  Annotated[list[str], Form()] = [],
+    field_value: Annotated[list[str], Form()] = [],
+    field_type:  Annotated[list[int], Form()] = [],
+):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return HTMLResponse('<p class="error">Session expired</p>')
+
+    new_fields = [
+        {"name": n, "value": v, "type": t}
+        for n, v, t in zip(field_name, field_value, field_type)
+        if n.strip()
+    ]
+
+    try:
+        bw.update_item_custom_fields(item_id, new_fields, session)
+        bw.invalidate_cache()
+    except bw.BWError as e:
+        item_name, custom_fields = bw.get_item_custom_fields(item_id, session)
+        return templates.TemplateResponse(request, "partials/fields_editor.html", {
+            "item_id": item_id,
+            "item_name": item_name,
+            "custom_fields": new_fields,
+            "error": str(e),
+        })
+
+    return HTMLResponse('<p style="color:#4ec94e; font-family:monospace; font-size:.85rem">✓ Saved</p>')
+
+
+# ---------------------------------------------------------------------------
 # Key creation
 # ---------------------------------------------------------------------------
 

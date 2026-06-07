@@ -85,4 +85,16 @@ function reloadKeys() {
   </article>
 </dialog>
 
+<!-- Fields editor dialog -->
+<dialog id="fields-dialog">
+  <article style="min-width:480px; max-width:640px">
+    <header>
+      <button aria-label="Close" rel="prev"
+              onclick="document.getElementById('fields-dialog').close()"></button>
+      <h3 style="margin:0">Custom Fields</h3>
+    </header>
+    <div id="fields-dialog-body"><p aria-busy="true">Loading…</p></div>
+  </article>
+</dialog>
+
 {% endblock %}

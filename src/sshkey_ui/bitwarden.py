@@ -333,6 +333,38 @@ def create_ssh_item(
     return json.loads(result.stdout.strip())["id"]
 
 
+_PROTECTED_FIELDS = {"alias", "user", "hostname", "port", "password"}
+
+
+def get_item_custom_fields(item_id: str, session: str) -> tuple[str, list[dict]]:
+    """Return (item_name, non-protected fields) for the fields editor."""
+    raw = _bw("get", "item", item_id, "--nointeraction", session=session)
+    obj = json.loads(raw)
+    custom = [
+        f for f in obj.get("fields", [])
+        if (f.get("name") or "").lower() not in _PROTECTED_FIELDS
+    ]
+    return obj.get("name", ""), custom
+
+
+def update_item_custom_fields(item_id: str, new_fields: list[dict], session: str) -> None:
+    """Replace non-protected fields, preserving alias/user/hostname/port/password."""
+    raw = _bw("get", "item", item_id, "--nointeraction", session=session)
+    obj = json.loads(raw)
+    protected = [
+        f for f in obj.get("fields", [])
+        if (f.get("name") or "").lower() in _PROTECTED_FIELDS
+    ]
+    obj["fields"] = protected + new_fields
+    encoded = base64.b64encode(json.dumps(obj).encode()).decode()
+    result = subprocess.run(
+        [BW_BIN, "edit", "item", item_id, "--session", session],
+        input=encoded, capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        raise BWError(result.stderr.strip() or "edit item failed")
+
+
 def migrate_item(
     item_id: str,
     *,

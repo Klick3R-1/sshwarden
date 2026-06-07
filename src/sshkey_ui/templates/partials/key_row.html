@@ -90,4 +90,14 @@
     </button>
     {% endif %}
   </td>
+  <td>
+    <button class="outline secondary"
+            style="padding:.2rem .6rem; font-size:.8em"
+            hx-get="/keys/{{ item.id }}/fields"
+            hx-target="#fields-dialog-body"
+            hx-swap="innerHTML"
+            onclick="document.getElementById('fields-dialog').showModal()">
+      Fields
+    </button>
+  </td>
 </tr>
