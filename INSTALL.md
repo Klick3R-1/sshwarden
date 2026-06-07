@@ -61,14 +61,20 @@ echo '127.0.0.1 sshkeys' | sudo tee -a /etc/hosts
 # install nginx if not already present
 sudo pacman -S --needed nginx
 
-# install the proxy config
-sudo cp sshkeys.nginx.conf /etc/nginx/sites-available/sshkeys
-sudo mkdir -p /etc/nginx/sites-enabled
-sudo ln -s /etc/nginx/sites-available/sshkeys /etc/nginx/sites-enabled/sshkeys
+# drop the proxy config into conf.d/
+sudo mkdir -p /etc/nginx/conf.d
+sudo cp sshkeys.nginx.conf /etc/nginx/conf.d/sshkeys.conf
+```
 
-# make sure nginx includes sites-enabled (add this to /etc/nginx/nginx.conf http block if missing):
-#   include /etc/nginx/sites-enabled/*;
+Then add the following line inside the `http {}` block in `/etc/nginx/nginx.conf`, just before the closing `}`:
 
+```nginx
+include /etc/nginx/conf.d/*.conf;
+```
+
+Finally enable and start:
+
+```bash
 sudo systemctl enable --now nginx
 sudo nginx -t && sudo systemctl reload nginx
 ```
