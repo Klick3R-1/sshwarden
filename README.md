@@ -1,6 +1,16 @@
 # sshwarden
 
-A local web dashboard for managing SSH keys stored in Bitwarden. Handles key syncing to `~/.ssh/sshwarden/`, SSH config generation, local key imports, key creation, and custom fields editing.
+A local web dashboard for managing SSH keys stored in Bitwarden, designed for people who use a unique SSH key per server rather than a single shared key.
+
+The idea is simple: every server gets its own key, all keys live in Bitwarden, and sshwarden keeps your SSH config in sync. After the initial setup you can `ssh hostname` with zero manual configuration — add a new key in the UI, hit Sync, and it works.
+
+Without something like this, unique-key-per-server quickly becomes unmanageable: you end up juggling dozens of keys, manually writing SSH config stanzas, and losing track of which key belongs to which server. sshwarden centralises that in Bitwarden (where you likely already store server passwords) and automates the rest.
+
+**What it does:**
+- Syncs public keys from Bitwarden to `~/.ssh/sshwarden/` and generates SSH config stanzas automatically
+- Creates new SSH key pairs and stores them directly in Bitwarden
+- Manages per-server metadata (hostname, user, port) as structured Bitwarden custom fields
+- Supports local key overrides for servers where you want a locally-stored private key instead of the Bitwarden agent
 
 Built with FastAPI, HTMX, and PicoCSS. Runs as a systemd user service at `http://sshkeys` via an nginx reverse proxy.
 
