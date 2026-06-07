@@ -317,7 +317,7 @@ def create_ssh_item(
         "sshKey": {
             "privateKey": private_key,
             "publicKey": public_key,
-            "fingerprint": fingerprint,
+            "keyFingerprint": fingerprint,  # BW input uses keyFingerprint; output serialises as fingerprint
         },
         "fields": fields,
     }

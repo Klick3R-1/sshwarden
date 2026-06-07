@@ -306,15 +306,16 @@ async def create_key(
     try:
         with tempfile.NamedTemporaryFile(prefix="sshkey_", delete=False) as tmp:
             tmp_path = Path(tmp.name)
+        tmp_path.unlink()  # ssh-keygen must create it fresh; existing file triggers overwrite prompt
 
         try:
             comment = f"{alias} {user}"
             result = subprocess.run(
                 ["ssh-keygen", "-t", key_type, "-f", str(tmp_path), "-N", "", "-C", comment],
-                capture_output=True, text=True,
+                capture_output=True, text=True, stdin=subprocess.DEVNULL,
             )
             if result.returncode != 0:
-                raise RuntimeError(result.stderr)
+                raise RuntimeError(result.stderr or f"ssh-keygen exited {result.returncode}")
 
             private_key = tmp_path.read_text()
             public_key = Path(str(tmp_path) + ".pub").read_text().strip()
@@ -323,7 +324,18 @@ async def create_key(
                 ["ssh-keygen", "-l", "-E", "sha256", "-f", str(tmp_path) + ".pub"],
                 capture_output=True, text=True,
             )
-            fingerprint = fp_result.stdout.split()[1] if fp_result.returncode == 0 else ""
+            parts = fp_result.stdout.split()
+            fingerprint = parts[1] if fp_result.returncode == 0 and len(parts) >= 2 else ""
+
+            if not fingerprint:
+                import hashlib, base64 as _b64
+                try:
+                    pk_parts = public_key.split()
+                    key_bytes = _b64.b64decode(pk_parts[1])
+                    digest = hashlib.sha256(key_bytes).digest()
+                    fingerprint = "SHA256:" + _b64.b64encode(digest).decode().rstrip("=")
+                except Exception:
+                    pass
 
             bw.create_ssh_item(
                 name=f"{alias} {user}",
@@ -338,7 +350,6 @@ async def create_key(
                 session=session,
             )
         finally:
-            # shred private key immediately
             subprocess.run(["shred", "-u", str(tmp_path)], capture_output=True)
             pub = Path(str(tmp_path) + ".pub")
             if pub.exists():
@@ -349,7 +360,7 @@ async def create_key(
             pass
 
     except Exception as e:
-        error = str(e)
+        error = str(e) or type(e).__name__
 
     if error:
         return templates.TemplateResponse(request, "partials/create_error.html", {"error": error})
