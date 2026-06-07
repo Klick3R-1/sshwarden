@@ -21,7 +21,10 @@ This installs two binaries to `~/.local/bin/`:
 
 To upgrade after pulling changes:
 ```bash
+cd /path/to/k-sshkey-solution
+git pull
 pipx reinstall sshkey-ui
+systemctl --user restart sshkey-ui
 ```
 
 ## 2. SSH config
