@@ -15,6 +15,7 @@ BW_PUB_DIR = Path.home() / ".ssh" / "bwpub"
 STATUS_CONFIRMED   = "confirmed"
 STATUS_MISSING     = "missing"
 STATUS_UNREACHABLE = "unreachable"
+STATUS_AUTH_FAILED = "auth_failed"
 STATUS_UNKNOWN     = "unknown"
 
 
@@ -27,30 +28,35 @@ def manifest_status(item: SSHKeyItem, deployments: list[Deployment]) -> str:
     return STATUS_UNKNOWN if not declared else STATUS_UNKNOWN
 
 
-async def live_check(item: SSHKeyItem) -> str:
-    """SSH into the server and check whether our public key is in authorized_keys."""
+async def live_check(item: SSHKeyItem) -> tuple[str, list[str]]:
+    """SSH into the server and check whether our public key is in authorized_keys.
+
+    Returns (status, log_lines).
+    """
+    log: list[str] = []
+
     if not item.hostname or not item.alias:
-        return STATUS_UNKNOWN
+        log.append(f"[SKIP] {item.alias or item.id} — no hostname set")
+        return STATUS_UNKNOWN, log
 
     pub_path = BW_PUB_DIR / item.pub_filename
     if not pub_path.exists():
-        return STATUS_UNKNOWN
+        log.append(f"[SKIP] {item.host_alias} — pub file missing, run Sync first")
+        return STATUS_UNKNOWN, log
 
     pubkey_content = pub_path.read_text().strip()
 
-    user_host = f"{item.user}@{item.hostname}" if item.user else item.hostname
-    port = item.port or "22"
-
     cmd = [
         "ssh",
-        "-p", port,
         "-o", "StrictHostKeyChecking=no",
         "-o", "BatchMode=yes",
         "-o", "ConnectTimeout=8",
         "-o", "PasswordAuthentication=no",
-        user_host,
+        item.host_alias,
         "cat ~/.ssh/authorized_keys 2>/dev/null || true",
     ]
+    log.append(f"[CHECK] {item.host_alias} ({item.hostname}:{item.port or 22})")
+    log.append(f"[CMD]   {' '.join(cmd)}")
 
     try:
         proc = await asyncio.create_subprocess_exec(
@@ -58,17 +64,31 @@ async def live_check(item: SSHKeyItem) -> str:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=12)
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=12)
         auth_keys = stdout.decode(errors="replace")
+        stderr_text = stderr.decode(errors="replace").strip()
+
+        if stderr_text:
+            log.append(f"[STDERR] {stderr_text}")
 
         # strip comment from pubkey for comparison (type + key material only)
         pub_parts = pubkey_content.split()
         pub_material = " ".join(pub_parts[:2]) if len(pub_parts) >= 2 else pubkey_content
 
         if any(pub_material in line for line in auth_keys.splitlines()):
-            return STATUS_CONFIRMED
+            log.append(f"[OK] key found in authorized_keys")
+            return STATUS_CONFIRMED, log
         if proc.returncode == 0:
-            return STATUS_MISSING
-        return STATUS_UNREACHABLE
-    except (asyncio.TimeoutError, OSError):
-        return STATUS_UNREACHABLE
+            log.append(f"[MISSING] connected ok but key not in authorized_keys")
+            return STATUS_MISSING, log
+        if any(s in stderr_text for s in ("Permission denied", "publickey", "No more authentication")):
+            log.append(f"[AUTH FAILED] check BW agent or local key for {item.host_alias}")
+            return STATUS_AUTH_FAILED, log
+        log.append(f"[UNREACHABLE] exit {proc.returncode}")
+        return STATUS_UNREACHABLE, log
+    except asyncio.TimeoutError:
+        log.append(f"[TIMEOUT] no response after 12s")
+        return STATUS_UNREACHABLE, log
+    except OSError as e:
+        log.append(f"[ERROR] {e}")
+        return STATUS_UNREACHABLE, log

@@ -25,7 +25,7 @@ class LocalKey:
 
     @property
     def host_alias(self) -> str:
-        return f"{self.alias}::{self.user}" if self.user else self.alias
+        return f"{self.alias}--{self.user}" if self.user else self.alias
 
     @property
     def priv_path(self) -> Path:
@@ -53,7 +53,7 @@ class LocalKey:
 
 
 def _local_conf_key_paths() -> set[str]:
-    """Return the set of IdentityFile paths referenced in bwpub.local.conf."""
+    """Return the set of IdentityFile paths referenced in bwpub-local.conf."""
     paths: set[str] = set()
     if not LOCAL_CONF.exists():
         return paths
@@ -174,7 +174,7 @@ def delete_local_key(stem: str) -> None:
 
 
 def _append_local_conf(*, alias: str, user: str, hostname: str, port: str, priv_path: Path) -> None:
-    host_alias = f"{alias}::{user}" if user else alias
+    host_alias = f"{alias}--{user}" if user else alias
     lines = [
         f"\nHost {host_alias}",
         f"  HostName {hostname or '<replace.me>'}",
@@ -185,6 +185,7 @@ def _append_local_conf(*, alias: str, user: str, hostname: str, port: str, priv_
         f"  Port {port}",
         f"  IdentityFile {priv_path}",
         "  IdentitiesOnly yes",
+        "  IdentityAgent none",
         "",
     ]
     LOCAL_CONF.touch()

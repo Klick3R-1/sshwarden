@@ -23,6 +23,7 @@
         {% set item = row.item %}
         {% set agent = row.agent %}
         {% set dep_status = row.dep_status %}
+        {% set has_local_key = row.has_local_key %}
         {% include "partials/key_row.html" %}
       {% endfor %}
     </tbody>

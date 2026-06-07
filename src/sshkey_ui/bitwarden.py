@@ -147,12 +147,11 @@ class SSHKeyItem:
     @property
     def host_alias(self) -> str:
         """SSH config Host value."""
-        return f"{self.alias}::{self.user}" if self.user else self.alias
+        return f"{self.alias}--{self.user}" if self.user else self.alias
 
     @property
     def pub_filename(self) -> str:
-        """Filesystem-safe filename — :: becomes __ on disk."""
-        return f"{self.host_alias.replace('::', '__')}.pub"
+        return f"{self.host_alias.replace('--', '__')}.pub"
 
     @property
     def age_days(self) -> int | None:
@@ -356,7 +355,7 @@ def migrate_item(
         {"name": "port",     "value": port,     "type": 0},
     ]
     obj["fields"] = existing
-    obj["name"] = f"{alias}::{user}" if user else alias
+    obj["name"] = f"{alias}--{user}" if user else alias
 
     encoded = base64.b64encode(json.dumps(obj).encode()).decode()
     result = subprocess.run(

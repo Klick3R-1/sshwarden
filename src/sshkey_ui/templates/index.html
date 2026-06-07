@@ -20,6 +20,15 @@
     Check all
     <span id="check-spinner" class="htmx-indicator"> ⏳</span>
   </button>
+  <button hx-post="/clear"
+          hx-target="#sync-log"
+          hx-swap="innerHTML"
+          hx-indicator="#clear-spinner"
+          hx-confirm="Remove all files in ~/.ssh/bwpub/ and delete bwpub.auto.conf?"
+          class="outline secondary" style="color:#c66">
+    Clear
+    <span id="clear-spinner" class="htmx-indicator"> ⏳</span>
+  </button>
   <button onclick="document.getElementById('new-key-dialog').showModal()" class="outline contrast">
     + New key
   </button>

@@ -22,8 +22,8 @@
 {% set local_rows = detail | selectattr('source', 'equalto', 'local') | list %}
 {% set auto_rows  = detail | selectattr('source', 'equalto', 'auto')  | list %}
 {% if local_rows and not auto_rows %}
-<p style="margin-top:1.2rem; color:#4ec94e; font-size:.78rem">L manual entry — bwpub.local.conf only (not in auto config)</p>
+<p style="margin-top:1.2rem; color:#4ec94e; font-size:.78rem">L manual entry — bwpub-local.conf only (not in auto config)</p>
 {% elif local_rows %}
-<p style="margin-top:1.2rem; color:#e8a23a; font-size:.78rem">* local override in bwpub.local.conf</p>
+<p style="margin-top:1.2rem; color:#e8a23a; font-size:.78rem">* local override in bwpub-local.conf</p>
 {% endif %}
 {% endif %}

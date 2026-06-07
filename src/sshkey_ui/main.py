@@ -17,7 +17,7 @@ from sshkey_ui import manifest as mf
 from sshkey_ui import deployment as dep
 from sshkey_ui import config_reader as cr
 from sshkey_ui import local_keys as lk
-from sshkey_ui.sync import run_sync
+from sshkey_ui.sync import run_sync, run_clear
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 def _user_color(user: str) -> str:
@@ -44,6 +44,11 @@ PORT = 8765
 
 def _session(request: Request) -> str | None:
     return bw.get_session()
+
+
+def _local_key_stems() -> set[str]:
+    """Stems of keys imported to ~/.ssh/local/ — used to badge rows on the dashboard."""
+    return lk.imported_stems()
 
 
 def _agent_fingerprints() -> set[str]:
@@ -116,6 +121,7 @@ async def keys_partial(request: Request, show_shared: bool = False):
         items = [i for i in items if not i.is_shared]
 
     agent_fps = _agent_fingerprints()
+    local_stems = _local_key_stems()
     deployments = mf.load()
 
     rows = []
@@ -125,6 +131,7 @@ async def keys_partial(request: Request, show_shared: bool = False):
             "item": item,
             "agent": item.fingerprint in agent_fps,
             "dep_status": dep_status,
+            "has_local_key": item.pub_filename.removesuffix(".pub") in local_stems,
         })
 
     return templates.TemplateResponse(request, "partials/key_table.html", {"rows": rows})
@@ -152,6 +159,17 @@ async def do_sync(request: Request):
     return templates.TemplateResponse(request, "partials/sync_log.html", {"output": output})
 
 
+@app.post("/clear", response_class=HTMLResponse)
+async def do_clear(request: Request):
+    session = _session(request)
+    if not session or not bw.is_unlocked(session):
+        return _redirect_unlock()
+
+    lines: list[str] = list(run_clear())
+    output = "\n".join(lines)
+    return templates.TemplateResponse(request, "partials/sync_log.html", {"output": output})
+
+
 # ---------------------------------------------------------------------------
 # Deployment check
 # ---------------------------------------------------------------------------
@@ -167,14 +185,16 @@ async def check_key(request: Request, item_id: str):
     if not item:
         return HTMLResponse("Not found", status_code=404)
 
-    status = await dep.live_check(item)
+    status, log_lines = await dep.live_check(item)
     agent_fps = _agent_fingerprints()
-    deployments = mf.load()
+    local_stems = _local_key_stems()
 
-    return templates.TemplateResponse(request, "partials/key_row.html", {
+    return templates.TemplateResponse(request, "partials/check_result.html", {
         "item": item,
         "agent": item.fingerprint in agent_fps,
         "dep_status": status,
+        "has_local_key": item.pub_filename.removesuffix(".pub") in local_stems,
+        "log": "\n".join(log_lines),
     })
 
 
@@ -186,18 +206,25 @@ async def check_all(request: Request):
 
     items = bw.list_ssh_items(session)
     agent_fps = _agent_fingerprints()
+    local_stems = _local_key_stems()
     deployments = mf.load()
 
     rows = []
+    all_logs: list[str] = []
     for item in items:
-        status = await dep.live_check(item)
+        status, log_lines = await dep.live_check(item)
         rows.append({
             "item": item,
             "agent": item.fingerprint in agent_fps,
             "dep_status": status,
+            "has_local_key": item.pub_filename.removesuffix(".pub") in local_stems,
         })
+        all_logs.extend(log_lines)
 
-    return templates.TemplateResponse(request, "partials/key_table.html", {"rows": rows})
+    return templates.TemplateResponse(request, "partials/check_all_result.html", {
+        "rows": rows,
+        "log": "\n".join(all_logs),
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -245,9 +272,11 @@ async def migrate_item(
         return HTMLResponse("ok")
 
     agent_fps = _agent_fingerprints()
+    local_stems = _local_key_stems()
     deployments = mf.load()
     return templates.TemplateResponse(request, "partials/key_row.html", {
         "item": item,
+        "has_local_key": item.pub_filename.removesuffix(".pub") in local_stems,
         "agent": item.fingerprint in agent_fps,
         "dep_status": dep.manifest_status(item, deployments),
     })

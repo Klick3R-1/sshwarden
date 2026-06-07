@@ -1,6 +1,9 @@
 <tr id="row-{{ item.id }}">
   <td>
-    <kbd>{{ item.alias }}{% if item.user %}<span style="opacity:.45">::</span><span style="color:{{ item.user | user_color }}">{{ item.user }}</span>{% endif %}</kbd>
+    <kbd>{{ item.alias }}{% if item.user %}<span style="opacity:.45">--</span><span style="color:{{ item.user | user_color }}">{{ item.user }}</span>{% endif %}</kbd>
+    {% if has_local_key %}
+    <span class="badge badge-local" title="Local key copy in ~/.ssh/local/">local</span>
+    {% endif %}
     {% if not item.name %}
     <span class="badge badge-danger" title="No name set in Bitwarden — give this item a name">nameless</span>
     {% endif %}
@@ -50,6 +53,8 @@
       <span class="badge badge-missing">✗ missing</span>
     {% elif dep_status == "unreachable" %}
       <span class="badge badge-warn">⚠ unreachable</span>
+    {% elif dep_status == "auth_failed" %}
+      <span class="badge badge-auth-fail" title="SSH auth failed — is the BW agent running?">⚠ auth failed</span>
     {% else %}
       <span class="badge badge-unknown">?</span>
     {% endif %}

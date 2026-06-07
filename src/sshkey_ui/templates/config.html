@@ -61,9 +61,9 @@
          onclick="setActive(this)">
       <span>{{ h }}</span>
       {% if h in local_only %}
-        <span class="star" title="Manual entry in bwpub.local.conf only">L</span>
+        <span class="star" title="Manual entry in bwpub-local.conf only">L</span>
       {% elif h in local_hosts %}
-        <span class="star" title="Has local override in bwpub.local.conf">*</span>
+        <span class="star" title="Has local override in bwpub-local.conf">*</span>
       {% endif %}
     </div>
     {% endfor %}

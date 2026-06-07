@@ -36,7 +36,7 @@
     {% for k in keys %}
     <tr>
       <td>
-        <kbd>{{ k.alias }}{% if k.user %}<span style="opacity:.45">::</span><span style="color:{{ k.user | user_color }}">{{ k.user }}</span>{% endif %}</kbd>
+        <kbd>{{ k.alias }}{% if k.user %}<span style="opacity:.45">--</span><span style="color:{{ k.user | user_color }}">{{ k.user }}</span>{% endif %}</kbd>
       </td>
       <td><small title="{{ k.fingerprint }}">{{ k.fingerprint[:28] }}…</small></td>
       <td><span class="badge badge-unknown">{{ k.key_type }}</span></td>
@@ -81,7 +81,7 @@
           <option value="{{ item.id }}"
                   data-hostname="{{ item.hostname }}"
                   data-port="{{ item.port }}">
-            {{ item.alias }}{% if item.user %}::{{ item.user }}{% endif %}
+            {{ item.alias }}{% if item.user %}--{{ item.user }}{% endif %}
             {% if item.hostname %} ({{ item.hostname }}){% endif %}
           </option>
           {% endfor %}
@@ -97,7 +97,7 @@
       </div>
       <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer">
         <input type="checkbox" name="add_to_conf" value="true" style="margin:0">
-        Add Host entry to bwpub.local.conf
+        Add Host entry to bwpub-local.conf
       </label>
       <small style="color:#555; display:block; margin-top:.3rem">
         Private key is written to ~/.ssh/local/ — works without Bitwarden agent.
