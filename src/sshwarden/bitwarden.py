@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 BW_BIN = "/usr/local/bin/bw"
-SESSION_FILE = Path.home() / ".config" / "sshkey-ui" / "session.json"
+SESSION_FILE = Path.home() / ".config" / "sshwarden" / "session.json"
 SESSION_MAX_DAYS = 30
 
 # ---------------------------------------------------------------------------
@@ -210,7 +210,7 @@ def list_ssh_items(session: str, *, force: bool = False) -> list[SSHKeyItem]:
     if not force and _items_cache and (now - _items_cache[0]) < _ITEMS_TTL:
         return _items_cache[1]
 
-    from sshkey_ui.parser import parse_item_name
+    from sshwarden.parser import parse_item_name
 
     raw = _bw("list", "items", "--nointeraction", session=session)
     items: list[SSHKeyItem] = []

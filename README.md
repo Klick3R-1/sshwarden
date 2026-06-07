@@ -1,4 +1,4 @@
-# sshkey-ui
+# sshwarden
 
 A local web dashboard for managing SSH keys stored in Bitwarden. Handles key syncing to `~/.ssh/bwpub/`, SSH config generation, local key imports, key creation, and custom fields editing.
 
@@ -12,7 +12,7 @@ This tool is designed to run locally on a single-user workstation. The threat mo
 
 ### What is protected
 
-- **Session token** stored at `~/.config/sshkey-ui/session.json` with `chmod 600`. Plaintext, but readable only by your user — the same approach used by most CLI credential stores.
+- **Session token** stored at `~/.config/sshwarden/session.json` with `chmod 600`. Plaintext, but readable only by your user — the same approach used by most CLI credential stores.
 - **Public key files** in `~/.ssh/bwpub/` are stored with `chmod 600` because OpenSSH treats any `IdentityFile` path as a private key and rejects world-readable files.
 - **No shell injection** — all `subprocess` calls use argument lists, never `shell=True`.
 - **Bitwarden master password** is passed via environment variable to a subprocess and is not logged or stored.

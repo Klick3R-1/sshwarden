@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sshkey_ui.config_reader import LOCAL_CONF
+from sshwarden.config_reader import LOCAL_CONF
 
 LOCAL_KEY_DIR = Path.home() / ".ssh" / "local"
 

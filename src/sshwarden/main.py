@@ -1,4 +1,4 @@
-"""sshkey-ui — FastAPI web application."""
+"""sshwarden — FastAPI web application."""
 
 from __future__ import annotations
 
@@ -12,10 +12,10 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from sshkey_ui import bitwarden as bw
-from sshkey_ui import config_reader as cr
-from sshkey_ui import local_keys as lk
-from sshkey_ui.sync import run_sync, run_clear
+from sshwarden import bitwarden as bw
+from sshwarden import config_reader as cr
+from sshwarden import local_keys as lk
+from sshwarden.sync import run_sync, run_clear
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 def _user_color(user: str) -> str:
@@ -31,7 +31,7 @@ _jinja_env = Environment(
 _jinja_env.filters["user_color"] = _user_color
 templates = Jinja2Templates(env=_jinja_env)
 
-app = FastAPI(title="sshkey-ui")
+app = FastAPI(title="sshwarden")
 
 PORT = 8765
 
@@ -497,7 +497,7 @@ async def save_local_conf(request: Request, content: Annotated[str, Form()]):
 # ---------------------------------------------------------------------------
 
 def run() -> None:
-    uvicorn.run("sshkey_ui.main:app", host="127.0.0.1", port=PORT, reload=False)
+    uvicorn.run("sshwarden.main:app", host="127.0.0.1", port=PORT, reload=False)
 
 
 if __name__ == "__main__":

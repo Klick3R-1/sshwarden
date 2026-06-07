@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sshkey-ui"
+name = "sshwarden"
 version = "0.1.0"
 description = "SSH key management dashboard backed by Bitwarden"
 requires-python = ">=3.11"
@@ -15,11 +15,11 @@ dependencies = [
 ]
 
 [project.scripts]
-sshkey-ui   = "sshkey_ui.main:run"
-sshkey-sync = "sshkey_ui.sync:main"
+sshwarden      = "sshwarden.main:run"
+sshwarden-sync = "sshwarden.sync:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-sshkey_ui = ["templates/**/*.html"]
+sshwarden = ["templates/**/*.html"]

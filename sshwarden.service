@@ -1,9 +1,9 @@
 [Unit]
-Description=SSH Key Manager UI
+Description=sshwarden
 After=network.target
 
 [Service]
-ExecStart=%h/.local/bin/sshkey-ui
+ExecStart=%h/.local/bin/sshwarden
 Environment=SSH_AUTH_SOCK=%h/.bitwarden-ssh-agent.sock
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
 Restart=on-failure
