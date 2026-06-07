@@ -52,7 +52,15 @@ ls -la ~/.bitwarden-ssh-agent.sock
 
 If your socket path differs, edit `sshkey-ui.service` before installing.
 
-## 4. systemd user service
+## 4. Local hostname (optional)
+
+Add a hosts entry so the UI is reachable at `http://sshkeys:8765` instead of `http://localhost:8765`:
+
+```bash
+echo '127.0.0.1 sshkeys' | sudo tee -a /etc/hosts
+```
+
+## 5. systemd user service
 
 ```bash
 mkdir -p ~/.config/systemd/user
@@ -62,11 +70,11 @@ systemctl --user enable --now sshkey-ui
 systemctl --user status sshkey-ui
 ```
 
-The UI is available at **http://localhost:8765**.
+The UI is available at **http://localhost:8765** (or **http://sshkeys:8765** if you added the hosts entry).
 
-## 5. First run
+## 6. First run
 
-1. Open http://localhost:8765 — you will be prompted for your Bitwarden master password.
+1. Open http://sshkeys:8765 — you will be prompted for your Bitwarden master password.
 2. Click **Sync** to generate `~/.ssh/bwpub/` and `~/.ssh/config.d/bwpub.auto.conf`.
 3. Existing items using the old name convention will show a **migrate** badge — use the inline form to migrate them to structured custom fields.
 
