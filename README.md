@@ -11,6 +11,8 @@ Without something like this, unique-key-per-server quickly becomes unmanageable:
 - Creates new SSH key pairs and stores them directly in Bitwarden
 - Manages per-server metadata (hostname, user, port) as structured Bitwarden custom fields
 - Supports local key overrides for servers where you want a locally-stored private key instead of the Bitwarden agent
+- Stores the server password on the same Bitwarden item as the key — no separate login entry, no double entry across your vault
+- Supports arbitrary custom fields per key item for any extra per-server data you want to keep alongside the key
 
 Built with FastAPI, HTMX, and PicoCSS. Runs as a systemd user service at `http://sshkeys` via an nginx reverse proxy.
 
