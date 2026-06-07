@@ -33,7 +33,7 @@ templates = Jinja2Templates(env=_jinja_env)
 
 app = FastAPI(title="sshkey-ui")
 
-PORT = 80
+PORT = 8765
 
 
 # ---------------------------------------------------------------------------

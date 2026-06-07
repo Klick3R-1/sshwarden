@@ -52,17 +52,25 @@ ls -la ~/.bitwarden-ssh-agent.sock
 
 If your socket path differs, edit `sshkey-ui.service` before installing.
 
-## 4. Local hostname
-
-Add a hosts entry and allow unprivileged processes to bind to port 80:
+## 4. Local hostname via nginx
 
 ```bash
 # resolve http://sshkeys to localhost
 echo '127.0.0.1 sshkeys' | sudo tee -a /etc/hosts
 
-# allow user services to bind to port 80
-echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee /etc/sysctl.d/80-unprivileged-ports.conf
-sudo sysctl -p /etc/sysctl.d/80-unprivileged-ports.conf
+# install nginx if not already present
+sudo pacman -S --needed nginx
+
+# install the proxy config
+sudo cp sshkeys.nginx.conf /etc/nginx/sites-available/sshkeys
+sudo mkdir -p /etc/nginx/sites-enabled
+sudo ln -s /etc/nginx/sites-available/sshkeys /etc/nginx/sites-enabled/sshkeys
+
+# make sure nginx includes sites-enabled (add this to /etc/nginx/nginx.conf http block if missing):
+#   include /etc/nginx/sites-enabled/*;
+
+sudo systemctl enable --now nginx
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
 ## 5. systemd user service
@@ -75,11 +83,11 @@ systemctl --user enable --now sshkey-ui
 systemctl --user status sshkey-ui
 ```
 
-The UI is available at **http://sshkeys** (or **http://localhost** if you skipped step 4).
+The UI is available at **http://sshkeys** (or **http://localhost:8765** if you skipped step 4).
 
 ## 6. First run
 
-1. Open http://sshkeys — you will be prompted for your Bitwarden master password.
+1. Open http://sshkeys (or http://localhost:8765) — you will be prompted for your Bitwarden master password.
 2. Click **Sync** to generate `~/.ssh/bwpub/` and `~/.ssh/config.d/bwpub.auto.conf`.
 3. Existing items using the old name convention will show a **migrate** badge — use the inline form to migrate them to structured custom fields.
 
