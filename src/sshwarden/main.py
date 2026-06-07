@@ -275,7 +275,7 @@ async def create_key(
 
     error = ""
     try:
-        with tempfile.NamedTemporaryFile(prefix="sshkey_", delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(prefix="sshwarden_", delete=False) as tmp:
             tmp_path = Path(tmp.name)
         tmp_path.unlink()  # ssh-keygen must create it fresh; existing file triggers overwrite prompt
 

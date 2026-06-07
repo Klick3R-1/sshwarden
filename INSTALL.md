@@ -63,7 +63,7 @@ sudo pacman -S --needed nginx
 
 # drop the proxy config into conf.d/
 sudo mkdir -p /etc/nginx/conf.d
-sudo cp sshkeys.nginx.conf /etc/nginx/conf.d/sshkeys.conf
+sudo cp sshwarden.nginx.conf /etc/nginx/conf.d/sshkeys.conf
 ```
 
 Then add the following line inside the `http {}` block in `/etc/nginx/nginx.conf`, just before the closing `}`:
