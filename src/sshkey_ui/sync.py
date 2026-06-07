@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 from typing import Generator
 
-from sshkey_ui.bitwarden import SSHKeyItem, get_session, is_unlocked, list_ssh_items
+from sshkey_ui.bitwarden import SSHKeyItem, bw_sync, get_session, is_unlocked, list_ssh_items
 
 BW_PUB_DIR = Path.home() / ".ssh" / "bwpub"
 AUTO_CONF = Path.home() / ".ssh" / "config.d" / "bwpub.auto.conf"
@@ -44,6 +44,8 @@ def _stanza(item: SSHKeyItem, pub_path: Path) -> str:
 
 def run_sync(session: str, *, clean: bool = False) -> Generator[str, None, None]:
     """Yield log lines. Call from CLI or web UI."""
+    yield "Syncing vault from server..."
+    bw_sync(session)
     yield "Fetching items from Bitwarden..."
     items = list_ssh_items(session)
     ssh_items = [i for i in items if i.alias]

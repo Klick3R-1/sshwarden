@@ -364,6 +364,12 @@ def update_item_custom_fields(item_id: str, new_fields: list[dict], session: str
         raise BWError(result.stderr.strip() or "edit item failed")
 
 
+def bw_sync(session: str) -> None:
+    """Pull latest vault state from Bitwarden servers into the CLI cache."""
+    _bw("sync", "--nointeraction", session=session)
+    invalidate_cache()
+
+
 def migrate_item(
     item_id: str,
     *,
