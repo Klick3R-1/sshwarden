@@ -14,7 +14,7 @@ Without something like this, unique-key-per-server quickly becomes unmanageable:
 - Stores the server password on the same Bitwarden item as the key — no separate login entry, no double entry across your vault
 - Supports arbitrary custom fields per key item for any extra per-server data you want to keep alongside the key
 
-Built with FastAPI, HTMX, and PicoCSS. Runs as a systemd user service at `http://sshkeys` via an nginx reverse proxy.
+Built with FastAPI, HTMX, and PicoCSS. Runs as a systemd user service at `http://sshwarden` via an nginx reverse proxy.
 
 See [INSTALL.md](INSTALL.md) for setup instructions.
 
@@ -31,7 +31,7 @@ This tool is designed to run locally on a single-user workstation. The threat mo
 
 ### Known limitations
 
-- **No authentication on the web UI.** Anyone who can reach `http://localhost:8765` (or `http://sshkeys` if you added the `/etc/hosts` entry) can use the interface. On a single-user workstation this is acceptable. Do not expose port 8765 or the nginx vhost beyond loopback.
+- **No authentication on the web UI.** Anyone who can reach `http://localhost:8765` (or `http://sshwarden` if you added the `/etc/hosts` entry) can use the interface. On a single-user workstation this is acceptable. Do not expose port 8765 or the nginx vhost beyond loopback.
 - **Private key briefly touches disk during key creation.** `ssh-keygen` writes the key to a temporary file which is unlinked immediately after being uploaded to Bitwarden. `unlink()` does not overwrite the data — residual bytes may remain in unallocated disk blocks. If this matters for your threat model, mount `~/.ssh/` on tmpfs before creating keys.
 - **SSH config injection via vault fields.** `hostname`, `user`, and `port` custom fields are written into `sshwarden.auto.conf` without sanitization beyond the host alias. If an attacker has write access to your Bitwarden vault (compromised account, shared org vault), they could inject SSH config directives. This requires prior vault compromise.
 

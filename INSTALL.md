@@ -55,15 +55,15 @@ If your socket path differs, edit `sshwarden.service` before installing.
 ## 4. Local hostname via nginx
 
 ```bash
-# resolve http://sshkeys to localhost
-echo '127.0.0.1 sshkeys' | sudo tee -a /etc/hosts
+# resolve http://sshwarden to localhost
+echo '127.0.0.1 sshwarden' | sudo tee -a /etc/hosts
 
 # install nginx if not already present
 sudo pacman -S --needed nginx
 
 # drop the proxy config into conf.d/
 sudo mkdir -p /etc/nginx/conf.d
-sudo cp sshwarden.nginx.conf /etc/nginx/conf.d/sshkeys.conf
+sudo cp sshwarden.nginx.conf /etc/nginx/conf.d/sshwarden.conf
 ```
 
 Then add the following line inside the `http {}` block in `/etc/nginx/nginx.conf`, just before the closing `}`:
@@ -89,11 +89,11 @@ systemctl --user enable --now sshwarden
 systemctl --user status sshwarden
 ```
 
-The UI is available at **http://sshkeys** (or **http://localhost:8765** if you skipped step 4).
+The UI is available at **http://sshwarden** (or **http://localhost:8765** if you skipped step 4).
 
 ## 6. First run
 
-1. Open http://sshkeys (or http://localhost:8765) — you will be prompted for your Bitwarden master password.
+1. Open http://sshwarden (or http://localhost:8765) — you will be prompted for your Bitwarden master password.
 2. Click **Sync** to generate `~/.ssh/sshwarden/` and `~/.ssh/config.d/sshwarden.auto.conf`.
 3. Existing items using the old name convention will show a **migrate** badge — use the inline form to migrate them to structured custom fields.
 
