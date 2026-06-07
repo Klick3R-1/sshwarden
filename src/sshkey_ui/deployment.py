@@ -1,4 +1,4 @@
-"""Live SSH deployment check and manifest status."""
+"""Live SSH deployment check."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ import subprocess
 from pathlib import Path
 
 from sshkey_ui.bitwarden import SSHKeyItem
-from sshkey_ui.manifest import Deployment
 
 BW_PUB_DIR = Path.home() / ".ssh" / "bwpub"
 
@@ -18,14 +17,6 @@ STATUS_UNREACHABLE = "unreachable"
 STATUS_AUTH_FAILED = "auth_failed"
 STATUS_UNKNOWN     = "unknown"
 
-
-def manifest_status(item: SSHKeyItem, deployments: list[Deployment]) -> str:
-    """Return status based solely on the manifest (no network call)."""
-    declared = any(
-        d.get("alias") == item.alias and d.get("user", "") == item.user
-        for d in deployments
-    )
-    return STATUS_UNKNOWN if not declared else STATUS_UNKNOWN
 
 
 async def live_check(item: SSHKeyItem) -> tuple[str, list[str]]:

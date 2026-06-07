@@ -13,7 +13,6 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from sshkey_ui import bitwarden as bw
-from sshkey_ui import manifest as mf
 from sshkey_ui import deployment as dep
 from sshkey_ui import config_reader as cr
 from sshkey_ui import local_keys as lk
@@ -122,15 +121,13 @@ async def keys_partial(request: Request, show_shared: bool = False):
 
     agent_fps = _agent_fingerprints()
     local_stems = _local_key_stems()
-    deployments = mf.load()
 
     rows = []
     for item in items:
-        dep_status = dep.manifest_status(item, deployments)
         rows.append({
             "item": item,
             "agent": item.fingerprint in agent_fps,
-            "dep_status": dep_status,
+            "dep_status": dep.STATUS_UNKNOWN,
             "has_local_key": item.pub_filename.removesuffix(".pub") in local_stems,
         })
 
@@ -207,7 +204,6 @@ async def check_all(request: Request):
     items = bw.list_ssh_items(session)
     agent_fps = _agent_fingerprints()
     local_stems = _local_key_stems()
-    deployments = mf.load()
 
     rows = []
     all_logs: list[str] = []
@@ -273,12 +269,11 @@ async def migrate_item(
 
     agent_fps = _agent_fingerprints()
     local_stems = _local_key_stems()
-    deployments = mf.load()
     return templates.TemplateResponse(request, "partials/key_row.html", {
         "item": item,
         "has_local_key": item.pub_filename.removesuffix(".pub") in local_stems,
         "agent": item.fingerprint in agent_fps,
-        "dep_status": dep.manifest_status(item, deployments),
+        "dep_status": dep.STATUS_UNKNOWN,
     })
 
 
@@ -421,32 +416,6 @@ async def create_key(
 # ---------------------------------------------------------------------------
 # Manifest editor
 # ---------------------------------------------------------------------------
-
-@app.get("/manifest", response_class=HTMLResponse)
-async def manifest_page(request: Request):
-    session = _session(request)
-    if not session or not bw.is_unlocked(session):
-        return _redirect_unlock()
-    deployments = mf.load()
-    items = bw.list_ssh_items(session)
-    return templates.TemplateResponse(request, "manifest.html", {
-        "deployments": deployments,
-        "items": items,
-    })
-
-
-@app.post("/manifest")
-async def save_manifest(request: Request):
-    session = _session(request)
-    if not session or not bw.is_unlocked(session):
-        return _redirect_unlock()
-    form = await request.form()
-    aliases = form.getlist("alias")
-    users = form.getlist("user")
-    entries = [{"alias": a, "user": u} for a, u in zip(aliases, users) if a.strip()]
-    mf.save(entries)
-    return RedirectResponse(url="/manifest", status_code=302)
-
 
 # ---------------------------------------------------------------------------
 # Config overview
