@@ -1,6 +1,6 @@
 [Unit]
 Description=SSH Key Manager UI
-After=graphical-session.target
+After=network.target
 
 [Service]
 ExecStart=%h/.local/bin/sshkey-ui
