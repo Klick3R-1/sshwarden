@@ -24,7 +24,6 @@
   <thead>
     <tr>
       <th>Alias</th>
-      <th>Fingerprint</th>
       <th>Type</th>
       <th>Age</th>
       <th>local.conf</th>
@@ -38,7 +37,6 @@
       <td>
         <kbd>{{ k.alias }}{% if k.user %}<span style="opacity:.45">--</span><span style="color:{{ k.user | user_color }}">{{ k.user }}</span>{% endif %}</kbd>
       </td>
-      <td><small title="{{ k.fingerprint }}">{{ k.fingerprint[:28] }}…</small></td>
       <td><span class="badge badge-unknown">{{ k.key_type }}</span></td>
       <td><span class="badge badge-{{ k.age_color }}">{{ k.age_label }}</span></td>
       <td>
