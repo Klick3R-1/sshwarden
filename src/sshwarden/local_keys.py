@@ -53,7 +53,7 @@ class LocalKey:
 
 
 def _local_conf_key_paths() -> set[str]:
-    """Return the set of IdentityFile paths referenced in bwpub-local.conf."""
+    """Return the set of IdentityFile paths referenced in sshwarden-local.conf."""
     paths: set[str] = set()
     if not LOCAL_CONF.exists():
         return paths

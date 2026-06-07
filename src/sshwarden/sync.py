@@ -1,7 +1,7 @@
 """sshwarden-sync — replaces bw-ssh-pubsync.
 
 Reads SSH key items from Bitwarden (custom fields preferred, name fallback),
-writes ~/.ssh/bwpub/<alias>__<user>.pub and regenerates bwpub.auto.conf.
+writes ~/.ssh/sshwarden/<alias>__<user>.pub and regenerates sshwarden.auto.conf.
 """
 
 from __future__ import annotations
@@ -13,9 +13,9 @@ from typing import Generator
 
 from sshwarden.bitwarden import SSHKeyItem, bw_sync, get_session, is_unlocked, list_ssh_items
 
-BW_PUB_DIR = Path.home() / ".ssh" / "bwpub"
-AUTO_CONF = Path.home() / ".ssh" / "config.d" / "bwpub.auto.conf"
-LOCAL_CONF = Path.home() / ".ssh" / "config.d" / "bwpub-local.conf"
+BW_PUB_DIR = Path.home() / ".ssh" / "sshwarden"
+AUTO_CONF = Path.home() / ".ssh" / "config.d" / "sshwarden.auto.conf"
+LOCAL_CONF = Path.home() / ".ssh" / "config.d" / "sshwarden-local.conf"
 
 
 def _sanitize(s: str) -> str:
@@ -124,7 +124,7 @@ def run_sync(session: str, *, clean: bool = False) -> Generator[str, None, None]
 
 
 def run_clear() -> Generator[str, None, None]:
-    """Remove all files in ~/.ssh/bwpub/ and delete bwpub.auto.conf."""
+    """Remove all files in ~/.ssh/sshwarden/ and delete sshwarden.auto.conf."""
     removed = 0
     if BW_PUB_DIR.exists():
         for f in BW_PUB_DIR.glob("*.pub"):
@@ -140,7 +140,7 @@ def run_clear() -> Generator[str, None, None]:
 def main() -> None:
     import argparse
 
-    parser = argparse.ArgumentParser(description="Sync Bitwarden SSH keys to ~/.ssh/bwpub/")
+    parser = argparse.ArgumentParser(description="Sync Bitwarden SSH keys to ~/.ssh/sshwarden/")
     parser.add_argument("--clean", action="store_true", help="Remove stale .pub files")
     parser.add_argument("--session", help="bw session token (overrides stored session)")
     args = parser.parse_args()

@@ -1,11 +1,11 @@
-"""Parse bwpub.auto.conf and bwpub-local.conf into structured stanzas."""
+"""Parse sshwarden.auto.conf and sshwarden-local.conf into structured stanzas."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-AUTO_CONF  = Path.home() / ".ssh" / "config.d" / "bwpub.auto.conf"
-LOCAL_CONF = Path.home() / ".ssh" / "config.d" / "bwpub-local.conf"
+AUTO_CONF  = Path.home() / ".ssh" / "config.d" / "sshwarden.auto.conf"
+LOCAL_CONF = Path.home() / ".ssh" / "config.d" / "sshwarden-local.conf"
 
 
 def _parse(path: Path) -> dict[str, dict[str, str]]:
