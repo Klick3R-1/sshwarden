@@ -49,22 +49,6 @@ def _local_key_stems() -> set[str]:
     return lk.imported_stems()
 
 
-def _agent_fingerprints() -> set[str]:
-    """Return fingerprints currently loaded in the SSH agent."""
-    try:
-        result = subprocess.run(
-            ["ssh-add", "-l", "-E", "sha256"],
-            capture_output=True, text=True,
-        )
-        fps: set[str] = set()
-        for line in result.stdout.splitlines():
-            parts = line.split()
-            if len(parts) >= 2 and parts[1].startswith("SHA256:"):
-                fps.add(parts[1])
-        return fps
-    except Exception:
-        return set()
-
 
 def _redirect_unlock() -> RedirectResponse:
     return RedirectResponse(url="/unlock", status_code=302)
@@ -118,14 +102,14 @@ async def keys_partial(request: Request, show_shared: bool = False):
     if not show_shared:
         items = [i for i in items if not i.is_shared]
 
-    agent_fps = _agent_fingerprints()
+
     local_stems = _local_key_stems()
 
     rows = []
     for item in items:
         rows.append({
             "item": item,
-            "agent": item.fingerprint in agent_fps,
+
             "has_local_key": item.pub_filename.removesuffix(".pub") in local_stems,
         })
 
@@ -209,7 +193,7 @@ async def migrate_item(
     if not item:
         return HTMLResponse("ok")
 
-    agent_fps = _agent_fingerprints()
+
     local_stems = _local_key_stems()
     return templates.TemplateResponse(request, "partials/key_row.html", {
         "item": item,

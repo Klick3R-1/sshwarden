@@ -22,13 +22,6 @@
     <span class="badge badge-{{ item.age_color }}">{{ item.age_label }}</span>
   </td>
   <td>
-    {% if agent %}
-      <span class="badge badge-yes">✓</span>
-    {% else %}
-      <span class="badge badge-no">✗</span>
-    {% endif %}
-  </td>
-  <td>
     <div class="pw-cell">
       <span id="pw-{{ item.id }}">••••••</span>
       {% if item.migrated %}

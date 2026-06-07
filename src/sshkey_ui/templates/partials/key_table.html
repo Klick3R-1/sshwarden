@@ -12,16 +12,14 @@
         <th>Port</th>
         <th>Fingerprint</th>
         <th>Age</th>
-        <th>Agent</th>
-        <th>Password</th>
+<th>Password</th>
         <th></th>
       </tr>
     </thead>
     <tbody>
       {% for row in rows %}
         {% set item = row.item %}
-        {% set agent = row.agent %}
-        {% set has_local_key = row.has_local_key %}
+{% set has_local_key = row.has_local_key %}
         {% include "partials/key_row.html" %}
       {% endfor %}
     </tbody>
