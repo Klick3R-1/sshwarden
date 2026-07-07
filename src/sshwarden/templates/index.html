@@ -51,11 +51,27 @@ function togglePub(id, btn) {
 }
 function copyPub(id, btn) {
   const el = document.getElementById('pub-' + id);
-  navigator.clipboard.writeText(el.dataset.pub).then(() => {
+  const text = el.dataset.pub;
+  const done = () => {
     const prev = btn.textContent;
     btn.textContent = 'copied';
     setTimeout(() => { btn.textContent = prev; }, 1200);
-  });
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else {
+    fallbackCopy(text, done);
+  }
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); done(); } finally { ta.remove(); }
 }
 </script>
 
