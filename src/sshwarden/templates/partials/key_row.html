@@ -14,6 +14,21 @@
     <span class="badge badge-migrate" title="Using old name convention — migrate to custom fields">migrate</span>
     {% endif %}
   </td>
+  <td>
+    {% if item.public_key %}
+    <div class="pw-cell">
+      <span id="pub-{{ item.id }}" class="pub-val" data-pub="{{ item.public_key }}">••••••</span>
+      <button class="outline secondary"
+              style="padding:.1rem .5rem; font-size:.8em"
+              onclick="togglePub('{{ item.id }}', this)">show</button>
+      <button class="outline secondary"
+              style="padding:.1rem .5rem; font-size:.8em"
+              onclick="copyPub('{{ item.id }}', this)">copy</button>
+    </div>
+    {% else %}
+    <small>—</small>
+    {% endif %}
+  </td>
   <td>{{ item.user or "—" }}</td>
   <td>{{ item.hostname or "—" }}</td>
   <td>{{ item.port }}</td>

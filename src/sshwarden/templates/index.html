@@ -42,6 +42,21 @@ function reloadKeys() {
   const shared = document.getElementById('show-shared').checked;
   htmx.ajax('GET', '/keys?show_shared=' + shared, {target: '#key-table', swap: 'outerHTML'});
 }
+function togglePub(id, btn) {
+  const el = document.getElementById('pub-' + id);
+  const shown = el.dataset.shown === '1';
+  el.textContent = shown ? '••••••' : el.dataset.pub;
+  el.dataset.shown = shown ? '0' : '1';
+  btn.textContent = shown ? 'show' : 'hide';
+}
+function copyPub(id, btn) {
+  const el = document.getElementById('pub-' + id);
+  navigator.clipboard.writeText(el.dataset.pub).then(() => {
+    const prev = btn.textContent;
+    btn.textContent = 'copied';
+    setTimeout(() => { btn.textContent = prev; }, 1200);
+  });
+}
 </script>
 
 <!-- New key modal -->
